@@ -20,38 +20,11 @@ class GitHubRepository {
     
     suspend fun searchUsers(query: String): Result<List<GitHubUser>> {
         return try {
-            // First, search for users (limit to 10 for fewer API calls)
-            val searchResponse = apiService.searchUsers(query, perPage = 10)
-            
-            // Then, fetch full details for each user with rate limiting
-            val detailedUsers = coroutineScope {
-                searchResponse.items.mapIndexed { index, user ->
-                    async {
-                        try {
-                            // Add delay between requests to avoid rate limiting
-                            if (index > 0) {
-                                delay(200L) // 200ms delay between each request
-                            }
-                            
-                            // Check cache first
-                            val cached = userCache[user.login]
-                            if (cached != null && System.currentTimeMillis() - cached.second < CACHE_DURATION) {
-                                cached.first
-                            } else {
-                                // Fetch from API and cache it
-                                val userDetails = apiService.getUserDetails(user.login)
-                                userCache[user.login] = Pair(userDetails, System.currentTimeMillis())
-                                userDetails
-                            }
-                        } catch (e: Exception) {
-                            // If details fetch fails, return the basic user info
-                            user
-                        }
-                    }
-                }.awaitAll()
-            }
-            
-            Result.success(detailedUsers)
+            // Search for users (fetch 100 for pagination)
+            // Return basic search results without fetching individual details for all users
+            // to avoid rate limiting
+            val searchResponse = apiService.searchUsers(query, perPage = 100)
+            Result.success(searchResponse.items)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -82,8 +55,8 @@ class GitHubRepository {
                 return Result.success(cached.first)
             }
             
-            // Search for repositories
-            val searchResponse = apiService.searchRepositories(query, perPage = 10)
+            // Search for repositories (fetch 100 for pagination)
+            val searchResponse = apiService.searchRepositories(query, perPage = 100)
             
             // Cache the results
             repoCache[query] = Pair(searchResponse.items, System.currentTimeMillis())

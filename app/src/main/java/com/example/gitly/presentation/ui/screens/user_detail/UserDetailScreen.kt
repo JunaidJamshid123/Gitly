@@ -17,10 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -55,8 +57,6 @@ fun formatNumber(number: Int): String {
         else -> NumberFormat.getNumberInstance(Locale.US).format(number)
     }
 }
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailScreen(navController: NavHostController) {
@@ -167,28 +167,42 @@ fun UserDetailScreen(navController: NavHostController) {
                 }
             }
 
-            // Search results
-            if (!searchState.isLoading && searchState.error == null && searchState.users.isNotEmpty()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(searchState.users) { user ->
-                        GitHubUserSearchResult(
-                            navController = navController,
-                            username = user.login,
-                            name = user.name ?: user.login,
-                            bio = user.bio ?: "No bio available",
-                            avatarUrl = user.avatar_url,
-                            followers = user.followers ?: 0,
-                            repositories = user.public_repos ?: 0
+            // Search results with pagination
+            if (!searchState.isLoading && searchState.error == null && searchState.displayedUsers.isNotEmpty()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(searchState.displayedUsers) { user ->
+                            GitHubUserSearchResult(
+                                navController = navController,
+                                username = user.login,
+                                name = user.name ?: user.login,
+                                bio = user.bio ?: "No bio available",
+                                avatarUrl = user.avatar_url,
+                                followers = user.followers ?: 0,
+                                repositories = user.public_repos ?: 0,
+                                isFavorite = searchState.favoriteUserIds.contains(user.id),
+                                onToggleFavorite = { viewModel.toggleFavorite(user) }
+                            )
+                        }
+                    }
+                    
+                    // Pagination Controls
+                    if (searchState.totalPages > 1) {
+                        PaginationControls(
+                            currentPage = searchState.currentPage,
+                            totalPages = searchState.totalPages,
+                            onPreviousClick = { viewModel.previousPage() },
+                            onNextClick = { viewModel.nextPage() }
                         )
                     }
                 }
             }
 
             // Empty state
-            if (!searchState.isLoading && searchState.error == null && searchState.users.isEmpty() && searchText.isNotEmpty()) {
+            if (!searchState.isLoading && searchState.error == null && searchState.allUsers.isEmpty() && searchText.isNotEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -262,7 +276,9 @@ fun GitHubUserSearchResult(
     bio: String,
     avatarUrl: String,
     followers: Int,
-    repositories: Int
+    repositories: Int,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit
 ) {
     var showShareDialog by remember { mutableStateOf(false) }
     
@@ -346,15 +362,15 @@ fun GitHubUserSearchResult(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Save Icon
+                    // Favorite Icon
                     IconButton(
-                        onClick = { /* Handle save */ },
+                        onClick = onToggleFavorite,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Save",
-                            tint = Color.Gray,
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                            tint = if (isFavorite) Color(0xFFFF4081) else Color.Gray,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -579,6 +595,73 @@ fun ShareDialog(
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PaginationControls(
+    currentPage: Int,
+    totalPages: Int,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Previous Button
+            IconButton(
+                onClick = onPreviousClick,
+                enabled = currentPage > 1,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowLeft,
+                    contentDescription = "Previous Page",
+                    tint = if (currentPage > 1) Color(0xFF64B5F6) else Color(0xFFE0E0E0),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            
+            // Page Indicator
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFF5F5F5)
+            ) {
+                Text(
+                    text = "Page $currentPage of $totalPages",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            
+            // Next Button
+            IconButton(
+                onClick = onNextClick,
+                enabled = currentPage < totalPages,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = "Next Page",
+                    tint = if (currentPage < totalPages) Color(0xFF64B5F6) else Color(0xFFE0E0E0),
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }

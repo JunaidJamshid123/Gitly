@@ -1,7 +1,10 @@
 package com.example.gitly.presentation.ui.screens.user_detail
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gitly.data.local.AppDatabase
+import com.example.gitly.data.local.repository.FavoritesRepository
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
 import com.example.gitly.data.repository.GitHubRepository
@@ -12,8 +15,13 @@ import kotlinx.coroutines.launch
 
 data class UserSearchState(
     val isLoading: Boolean = false,
-    val users: List<GitHubUser> = emptyList(),
-    val error: String? = null
+    val allUsers: List<GitHubUser> = emptyList(),
+    val displayedUsers: List<GitHubUser> = emptyList(),
+    val error: String? = null,
+    val favoriteUserIds: Set<Int> = emptySet(),
+    val currentPage: Int = 1,
+    val totalPages: Int = 1,
+    val pageSize: Int = 10
 )
 
 data class UserReposState(
@@ -22,8 +30,13 @@ data class UserReposState(
     val error: String? = null
 )
 
-class UserDetailViewModel : ViewModel() {
+class UserDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = GitHubRepository()
+    private val database = AppDatabase.getDatabase(application)
+    private val favoritesRepository = FavoritesRepository(
+        database.favoriteRepoDao(),
+        database.favoriteUserDao()
+    )
     
     private val _searchState = MutableStateFlow(UserSearchState())
     val searchState: StateFlow<UserSearchState> = _searchState.asStateFlow()
@@ -34,6 +47,52 @@ class UserDetailViewModel : ViewModel() {
     private val _userReposState = MutableStateFlow(UserReposState())
     val userReposState: StateFlow<UserReposState> = _userReposState.asStateFlow()
     
+    init {
+        loadFavoriteUserIds()
+    }
+    
+    private fun loadFavoriteUserIds() {
+        viewModelScope.launch {
+            favoritesRepository.getAllFavoriteUsers().collect { favoriteUsers ->
+                _searchState.value = _searchState.value.copy(
+                    favoriteUserIds = favoriteUsers.map { it.id }.toSet()
+                )
+            }
+        }
+    }
+    
+    fun toggleFavorite(user: GitHubUser) {
+        viewModelScope.launch {
+            favoritesRepository.toggleFavoriteUser(user)
+        }
+    }
+    
+    fun nextPage() {
+        val state = _searchState.value
+        if (state.currentPage < state.totalPages) {
+            updateDisplayedUsers(state.currentPage + 1)
+        }
+    }
+    
+    fun previousPage() {
+        val state = _searchState.value
+        if (state.currentPage > 1) {
+            updateDisplayedUsers(state.currentPage - 1)
+        }
+    }
+    
+    private fun updateDisplayedUsers(page: Int) {
+        val state = _searchState.value
+        val startIndex = (page - 1) * state.pageSize
+        val endIndex = minOf(startIndex + state.pageSize, state.allUsers.size)
+        val displayedUsers = state.allUsers.subList(startIndex, endIndex)
+        
+        _searchState.value = state.copy(
+            currentPage = page,
+            displayedUsers = displayedUsers
+        )
+    }
+    
     fun searchUsers(query: String) {
         if (query.isBlank() || query.length < 3) {
             _searchState.value = UserSearchState()
@@ -41,13 +100,29 @@ class UserDetailViewModel : ViewModel() {
         }
         
         viewModelScope.launch {
-            _searchState.value = UserSearchState(isLoading = true)
+            _searchState.value = _searchState.value.copy(isLoading = true)
             
             repository.searchUsers(query).fold(
-                onSuccess = { users ->
-                    _searchState.value = UserSearchState(
+                onSuccess = { basicUsers ->
+                    // Fetch detailed info for users to get followers, bio, and repo counts
+                    val detailedUsers = basicUsers.take(50).mapNotNull { user ->
+                        try {
+                            repository.getUserDetails(user.login).getOrNull()
+                        } catch (e: Exception) {
+                            // If fetch fails, keep the basic user info
+                            user
+                        }
+                    }
+                    
+                    val totalPages = if (detailedUsers.isEmpty()) 1 else (detailedUsers.size + _searchState.value.pageSize - 1) / _searchState.value.pageSize
+                    val displayedUsers = detailedUsers.take(_searchState.value.pageSize)
+                    
+                    _searchState.value = _searchState.value.copy(
                         isLoading = false,
-                        users = users
+                        allUsers = detailedUsers,
+                        displayedUsers = displayedUsers,
+                        currentPage = 1,
+                        totalPages = totalPages
                     )
                 },
                 onFailure = { exception ->
@@ -58,7 +133,7 @@ class UserDetailViewModel : ViewModel() {
                             "Rate limit exceeded. Please try again later."
                         else -> exception.message ?: "An error occurred"
                     }
-                    _searchState.value = UserSearchState(
+                    _searchState.value = _searchState.value.copy(
                         isLoading = false,
                         error = errorMessage
                     )
