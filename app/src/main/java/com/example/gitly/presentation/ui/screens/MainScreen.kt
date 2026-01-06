@@ -3,15 +3,25 @@ package com.example.gitly.presentation.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -103,11 +113,21 @@ fun MainScreen(navController: NavHostController) {
                     .padding(innerPadding)
                     .background(Color.White)
             ) {
-                composable(BottomNavItem.Home.route) { HomeScreen(bottomNavController) }
-                composable(BottomNavItem.UserDetails.route) { UserDetailScreen(bottomNavController) }
-                composable(BottomNavItem.RepoDetails.route) { RepoDetailScreen(bottomNavController) }
-                composable(BottomNavItem.AiInsights.route) { AI_InsightScreeen(bottomNavController) }
-                composable(BottomNavItem.Favorites.route) { FavoritesScreen(bottomNavController) }
+                composable(BottomNavItem.Home.route) { 
+                    HomeScreen(bottomNavController) 
+                }
+                composable(BottomNavItem.UserDetails.route) { 
+                    UserDetailScreen(bottomNavController)
+                }
+                composable(BottomNavItem.RepoDetails.route) { 
+                    RepoDetailScreen(bottomNavController)
+                }
+                composable(BottomNavItem.AiInsights.route) { 
+                    AI_InsightScreeen(bottomNavController)
+                }
+                composable(BottomNavItem.Favorites.route) { 
+                    FavoritesScreen(bottomNavController) 
+                }
                 
                 // Repository Details Screen
                 composable(
@@ -160,4 +180,3 @@ fun MainScreen(navController: NavHostController) {
         }
     }
 }
-

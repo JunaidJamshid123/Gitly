@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.gitly.data.local.AppDatabase
 import com.example.gitly.data.local.entity.FavoriteRepo
-import com.example.gitly.data.local.entity.FavoriteUser
+import com.example.gitly.data.local.entity.FavoriteUserEntity
 import com.example.gitly.data.local.repository.FavoritesRepository
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 data class FavoritesState(
     val favoriteRepos: List<FavoriteRepo> = emptyList(),
-    val favoriteUsers: List<FavoriteUser> = emptyList(),
+    val favoriteUsers: List<FavoriteUserEntity> = emptyList(),
     val selectedTab: FavoriteTab = FavoriteTab.REPOS,
     val isLoading: Boolean = false
 )

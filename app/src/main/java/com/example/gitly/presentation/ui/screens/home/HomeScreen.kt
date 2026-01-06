@@ -629,7 +629,7 @@ fun TrendingUserCard(user: GitHubUser, navController: NavHostController) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                navController.navigate("user_profile/${user.login}")
+                navController.navigate("user/${user.login}")
             },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),

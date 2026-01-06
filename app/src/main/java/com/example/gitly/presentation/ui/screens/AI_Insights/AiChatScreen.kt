@@ -403,7 +403,7 @@ fun LinkChip(link: MessageLink, navController: NavHostController) {
                         navController.navigate("repo_details/${link.url}")
                     }
                     LinkType.USER -> {
-                        navController.navigate("user_profile/${link.url}")
+                        navController.navigate("user/${link.url}")
                     }
                     LinkType.EXTERNAL -> {
                         // Handle external links

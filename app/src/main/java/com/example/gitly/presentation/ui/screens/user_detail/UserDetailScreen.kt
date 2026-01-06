@@ -287,7 +287,7 @@ fun GitHubUserSearchResult(
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .clickable {
-                navController.navigate("user_profile/$username")
+                navController.navigate("user/$username")
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(

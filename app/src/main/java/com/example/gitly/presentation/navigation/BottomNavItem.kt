@@ -1,12 +1,16 @@
 package com.example.gitly.presentation.navigation
+
 import androidx.annotation.DrawableRes
 import com.example.gitly.R
-sealed class BottomNavItem (
+
+/**
+ * Bottom navigation items.
+ */
+sealed class BottomNavItem(
     val route: String,
     val title: String,
     @DrawableRes val icon: Int
-)
-{
+) {
     object Home : BottomNavItem("home", "Home", R.drawable.homee)
     object RepoDetails : BottomNavItem("repo_details", "Repositories", R.drawable.code)
     object UserDetails : BottomNavItem("user_details", "Users", R.drawable.user)

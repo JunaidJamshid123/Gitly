@@ -9,7 +9,6 @@ data class FavoriteUser(
     val id: Int,
     val login: String,
     val avatarUrl: String,
-    val url: String,
     val htmlUrl: String,
     val type: String,
     val name: String?,

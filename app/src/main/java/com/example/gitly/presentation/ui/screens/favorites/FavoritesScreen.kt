@@ -28,10 +28,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.R
 import com.example.gitly.data.local.entity.FavoriteRepo
-import com.example.gitly.data.local.entity.FavoriteUser
+import com.example.gitly.data.local.entity.FavoriteUserEntity
 import java.text.NumberFormat
 import java.util.Locale
-
 @Composable
 fun FavoritesScreen(navController: NavHostController) {
     val viewModel: FavoritesViewModel = viewModel()
@@ -158,7 +157,7 @@ fun FavoriteReposList(
 
 @Composable
 fun FavoriteUsersList(
-    users: List<FavoriteUser>,
+    users: List<FavoriteUserEntity>,
     navController: NavHostController,
     onRemove: (Int) -> Unit
 ) {
@@ -321,7 +320,7 @@ fun FavoriteRepoCard(
 
 @Composable
 fun FavoriteUserCard(
-    user: FavoriteUser,
+    user: FavoriteUserEntity,
     navController: NavHostController,
     onRemove: () -> Unit
 ) {
@@ -329,7 +328,7 @@ fun FavoriteUserCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                navController.navigate("user_profile/${user.login}")
+                navController.navigate("user/${user.login}")
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),

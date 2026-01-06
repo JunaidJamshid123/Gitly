@@ -3,7 +3,7 @@ package com.example.gitly.data.local.repository
 import com.example.gitly.data.local.dao.FavoriteRepoDao
 import com.example.gitly.data.local.dao.FavoriteUserDao
 import com.example.gitly.data.local.entity.FavoriteRepo
-import com.example.gitly.data.local.entity.FavoriteUser
+import com.example.gitly.data.local.entity.FavoriteUserEntity
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
 import kotlinx.coroutines.flow.Flow
@@ -58,16 +58,15 @@ class FavoritesRepository(
     }
     
     // User operations
-    fun getAllFavoriteUsers(): Flow<List<FavoriteUser>> = favoriteUserDao.getAllFavoriteUsers()
+    fun getAllFavoriteUsers(): Flow<List<FavoriteUserEntity>> = favoriteUserDao.getAllFavoriteUsers()
     
     suspend fun isFavoriteUser(userId: Int): Boolean = favoriteUserDao.isFavorite(userId)
     
     suspend fun addFavoriteUser(user: GitHubUser) {
-        val favoriteUser = FavoriteUser(
+        val favoriteUser = FavoriteUserEntity(
             id = user.id,
             login = user.login,
             avatarUrl = user.avatar_url,
-            url = user.url,
             htmlUrl = user.html_url,
             type = user.type,
             name = user.name,

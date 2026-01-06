@@ -7,11 +7,11 @@ import androidx.room.RoomDatabase
 import com.example.gitly.data.local.dao.FavoriteRepoDao
 import com.example.gitly.data.local.dao.FavoriteUserDao
 import com.example.gitly.data.local.entity.FavoriteRepo
-import com.example.gitly.data.local.entity.FavoriteUser
+import com.example.gitly.data.local.entity.FavoriteUserEntity
 
 @Database(
-    entities = [FavoriteRepo::class, FavoriteUser::class],
-    version = 1,
+    entities = [FavoriteRepo::class, FavoriteUserEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
