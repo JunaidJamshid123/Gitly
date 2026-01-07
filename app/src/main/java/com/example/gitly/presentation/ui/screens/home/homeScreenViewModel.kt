@@ -37,6 +37,11 @@ class HomeScreenViewModel : ViewModel() {
     private val _homeState = MutableStateFlow(HomeScreenState())
     val homeState: StateFlow<HomeScreenState> = _homeState.asStateFlow()
     
+    // Cache language stats for 1 hour to reduce API calls
+    private var cachedLanguageStats: List<LanguageStat>? = null
+    private var languageStatsCacheTime: Long = 0
+    private val LANGUAGE_STATS_CACHE_DURATION = 60 * 60 * 1000L // 1 hour
+    
     init {
         loadHomeData()
     }
@@ -53,7 +58,19 @@ class HomeScreenViewModel : ViewModel() {
                 // Fetch trending repos, users, and language stats in parallel
                 val trendingReposDeferred = async { fetchTrendingRepositories() }
                 val trendingUsersDeferred = async { fetchTrendingUsers() }
-                val languageStatsDeferred = async { fetchRealLanguageStats() }
+                
+                // Check if language stats are cached and still valid
+                val languageStatsDeferred = async {
+                    if (cachedLanguageStats != null && 
+                        System.currentTimeMillis() - languageStatsCacheTime < LANGUAGE_STATS_CACHE_DURATION) {
+                        cachedLanguageStats!!
+                    } else {
+                        fetchRealLanguageStats().also { stats ->
+                            cachedLanguageStats = stats
+                            languageStatsCacheTime = System.currentTimeMillis()
+                        }
+                    }
+                }
                 
                 val repos = trendingReposDeferred.await()
                 val users = trendingUsersDeferred.await()
@@ -96,8 +113,8 @@ class HomeScreenViewModel : ViewModel() {
             val query = "followers:>10000"
             val users = repository.searchUsers(query).getOrElse { emptyList() }
             
-            // Fetch detailed info for each user to get follower counts
-            users.take(3).mapNotNull { user ->
+            // Fetch detailed info for only 2 users to reduce API calls
+            users.take(2).mapNotNull { user ->
                 try {
                     repository.getUserDetails(user.login).getOrNull()
                 } catch (e: Exception) {
@@ -137,9 +154,10 @@ class HomeScreenViewModel : ViewModel() {
     
     private suspend fun fetchRealLanguageStats(): List<LanguageStat> {
         return try {
+            // Fetch only top 6 languages to reduce API calls
             val languages = listOf(
-                "JavaScript", "Python", "Java", "Kotlin", 
-                "TypeScript", "Go", "Rust", "Swift", "C++"
+                "JavaScript", "Python", "Java", 
+                "TypeScript", "Go", "Rust"
             )
             
             val languageStats = mutableListOf<LanguageStat>()

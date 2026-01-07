@@ -34,6 +34,10 @@ class RepoDetailViewModel(application: Application) : AndroidViewModel(applicati
     private val _searchState = MutableStateFlow(RepoSearchState())
     val searchState: StateFlow<RepoSearchState> = _searchState.asStateFlow()
     
+    // Cache to prevent duplicate searches
+    private val searchCache = mutableMapOf<String, List<GitHubRepo>>()
+    private var lastSearchQuery = ""
+    
     init {
         loadFavoriteRepoIds()
     }
@@ -86,11 +90,34 @@ class RepoDetailViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         
+        // Skip if same as last query to avoid duplicate calls
+        if (query == lastSearchQuery) {
+            return
+        }
+        lastSearchQuery = query
+        
+        // Check cache first
+        searchCache[query]?.let { cachedRepos ->
+            val totalPages = if (cachedRepos.isEmpty()) 1 else (cachedRepos.size + _searchState.value.pageSize - 1) / _searchState.value.pageSize
+            val displayedRepos = cachedRepos.take(_searchState.value.pageSize)
+            _searchState.value = _searchState.value.copy(
+                isLoading = false,
+                allRepos = cachedRepos,
+                displayedRepos = displayedRepos,
+                currentPage = 1,
+                totalPages = totalPages,
+                error = null
+            )
+            return
+        }
+        
         viewModelScope.launch {
             _searchState.value = _searchState.value.copy(isLoading = true)
             
             repository.searchRepositories(query).fold(
                 onSuccess = { repos ->
+                    // Cache the results
+                    searchCache[query] = repos
                     val totalPages = if (repos.isEmpty()) 1 else (repos.size + _searchState.value.pageSize - 1) / _searchState.value.pageSize
                     val displayedRepos = repos.take(_searchState.value.pageSize)
                     

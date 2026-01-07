@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gitly.data.local.AppDatabase
 import com.example.gitly.data.local.repository.FavoritesRepository
+import com.example.gitly.data.model.ContributionCalendar
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
 import com.example.gitly.data.repository.GitHubRepository
@@ -30,6 +31,12 @@ data class UserReposState(
     val error: String? = null
 )
 
+data class ContributionState(
+    val isLoading: Boolean = false,
+    val contributionCalendar: ContributionCalendar? = null,
+    val error: String? = null
+)
+
 class UserDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = GitHubRepository()
     private val database = AppDatabase.getDatabase(application)
@@ -46,6 +53,13 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
     
     private val _userReposState = MutableStateFlow(UserReposState())
     val userReposState: StateFlow<UserReposState> = _userReposState.asStateFlow()
+    
+    private val _contributionState = MutableStateFlow(ContributionState())
+    val contributionState: StateFlow<ContributionState> = _contributionState.asStateFlow()
+    
+    // Cache to prevent duplicate searches
+    private val searchCache = mutableMapOf<String, List<GitHubUser>>()
+    private var lastSearchQuery = ""
     
     init {
         loadFavoriteUserIds()
@@ -99,13 +113,34 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         
+        // Skip if same as last query to avoid duplicate calls
+        if (query == lastSearchQuery) {
+            return
+        }
+        lastSearchQuery = query
+        
+        // Check cache first
+        searchCache[query]?.let { cachedUsers ->
+            val totalPages = if (cachedUsers.isEmpty()) 1 else (cachedUsers.size + _searchState.value.pageSize - 1) / _searchState.value.pageSize
+            val displayedUsers = cachedUsers.take(_searchState.value.pageSize)
+            _searchState.value = _searchState.value.copy(
+                isLoading = false,
+                allUsers = cachedUsers,
+                displayedUsers = displayedUsers,
+                currentPage = 1,
+                totalPages = totalPages,
+                error = null
+            )
+            return
+        }
+        
         viewModelScope.launch {
             _searchState.value = _searchState.value.copy(isLoading = true)
             
             repository.searchUsers(query).fold(
                 onSuccess = { basicUsers ->
-                    // Fetch detailed info for users to get followers, bio, and repo counts
-                    val detailedUsers = basicUsers.take(50).mapNotNull { user ->
+                    // Fetch detailed info for only 20 users to reduce API calls
+                    val detailedUsers = basicUsers.take(20).mapNotNull { user ->
                         try {
                             repository.getUserDetails(user.login).getOrNull()
                         } catch (e: Exception) {
@@ -113,6 +148,9 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
                             user
                         }
                     }
+                    
+                    // Cache the results
+                    searchCache[query] = detailedUsers
                     
                     val totalPages = if (detailedUsers.isEmpty()) 1 else (detailedUsers.size + _searchState.value.pageSize - 1) / _searchState.value.pageSize
                     val displayedUsers = detailedUsers.take(_searchState.value.pageSize)
@@ -147,8 +185,9 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
             repository.getUserDetails(username).fold(
                 onSuccess = { user ->
                     _userDetailState.value = user
-                    // Fetch repositories when user details are loaded
+                    // Fetch repositories and contributions when user details are loaded
                     getUserRepositories(username)
+                    getUserContributions(username)
                 },
                 onFailure = { exception ->
                     // Handle error
@@ -172,6 +211,27 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
                     _userReposState.value = UserReposState(
                         isLoading = false,
                         error = exception.message ?: "Failed to load repositories"
+                    )
+                }
+            )
+        }
+    }
+    
+    fun getUserContributions(username: String) {
+        viewModelScope.launch {
+            _contributionState.value = ContributionState(isLoading = true)
+            
+            repository.getUserContributions(username).fold(
+                onSuccess = { calendar ->
+                    _contributionState.value = ContributionState(
+                        isLoading = false,
+                        contributionCalendar = calendar
+                    )
+                },
+                onFailure = { exception ->
+                    _contributionState.value = ContributionState(
+                        isLoading = false,
+                        error = exception.message ?: "Failed to load contributions"
                     )
                 }
             )

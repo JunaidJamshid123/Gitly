@@ -12,8 +12,12 @@ object Routes {
     const val FAVORITES = "favorites"
     const val USER_DETAIL = "user/{username}"
     const val REPO_DETAIL = "repo/{owner}/{repo}"
+    const val USER_STATISTICS = "user_statistics/{username}"
+    const val REPO_STATISTICS = "repo_statistics/{owner}/{repo}"
     
     fun userDetail(username: String) = "user/$username"
     fun repoDetail(owner: String, repo: String) = "repo/$owner/$repo"
     fun searchWithQuery(query: String) = "search?query=$query"
+    fun userStatistics(username: String) = "user_statistics/$username"
+    fun repoStatistics(owner: String, repo: String) = "repo_statistics/$owner/$repo"
 }

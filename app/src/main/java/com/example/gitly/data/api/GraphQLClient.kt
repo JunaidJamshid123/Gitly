@@ -1,14 +1,22 @@
 package com.example.gitly.data.api
 
 import com.example.gitly.BuildConfig
-import okhttp3.Interceptor
+import com.example.gitly.data.model.ContributionCalendarResponse
+import com.google.gson.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
 
-object RetrofitClient {
+interface GitHubGraphQLService {
+    @POST("graphql")
+    suspend fun query(@Body query: JsonObject): ContributionCalendarResponse
+}
+
+object GraphQLClient {
     private const val BASE_URL = "https://api.github.com/"
     private val GITHUB_TOKEN = BuildConfig.GITHUB_TOKEN
     
@@ -16,24 +24,22 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
     
-    // Auth interceptor to add GitHub token to all requests
-    private val authInterceptor = Interceptor { chain ->
+    private val authInterceptor = okhttp3.Interceptor { chain ->
         val originalRequest = chain.request()
         val requestWithAuth = originalRequest.newBuilder()
             .header("Authorization", "Bearer $GITHUB_TOKEN")
-            .header("Accept", "application/vnd.github.v3+json")
+            .header("Content-Type", "application/json")
             .build()
         chain.proceed(requestWithAuth)
     }
     
-    // Cache interceptor to support ETag-based conditional requests
-    private val cacheInterceptor = Interceptor { chain ->
+    private val cacheInterceptor = okhttp3.Interceptor { chain ->
         val request = chain.request()
         val response = chain.proceed(request)
         
-        // Cache responses for 15 minutes
+        // Cache responses for 1 hour (contributions don't change frequently)
         val cacheControl = okhttp3.CacheControl.Builder()
-            .maxAge(15, TimeUnit.MINUTES)
+            .maxAge(1, TimeUnit.HOURS)
             .build()
         
         response.newBuilder()
@@ -57,5 +63,32 @@ object RetrofitClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
     
-    val apiService: GitHubApiService = retrofit.create(GitHubApiService::class.java)
+    val apiService: GitHubGraphQLService = retrofit.create(GitHubGraphQLService::class.java)
+    
+    // Helper function to build contribution calendar query
+    fun buildContributionQuery(username: String): JsonObject {
+        val query = """
+            query {
+              user(login: "$username") {
+                contributionsCollection {
+                  contributionCalendar {
+                    totalContributions
+                    weeks {
+                      contributionDays {
+                        date
+                        contributionCount
+                        weekday
+                        color
+                      }
+                    }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+        
+        return JsonObject().apply {
+            addProperty("query", query)
+        }
+    }
 }

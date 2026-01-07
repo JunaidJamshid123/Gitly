@@ -45,21 +45,28 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.R
 import com.example.gitly.data.model.GitHubRepo
+import com.example.gitly.presentation.navigation.Routes
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(FlowPreview::class)
 @Composable
 fun RepoDetailScreen(navController: NavHostController) {
     var searchText by remember { mutableStateOf("") }
     val viewModel: RepoDetailViewModel = viewModel()
     val searchState by viewModel.searchState.collectAsState()
 
-    // Trigger search when searchText changes
-    LaunchedEffect(searchText) {
-        if (searchText.isNotEmpty() && searchText.length >= 3) {
-            kotlinx.coroutines.delay(800) // Debounce
-            viewModel.searchRepositories(searchText)
-        }
+    // Improved debouncing with proper cancellation
+    LaunchedEffect(Unit) {
+        snapshotFlow { searchText }
+            .debounce(1500) // Increased to 1.5 seconds to reduce API calls
+            .collect { query ->
+                if (query.isNotEmpty() && query.length >= 3) {
+                    viewModel.searchRepositories(query)
+                }
+            }
     }
 
     Surface(
@@ -255,7 +262,7 @@ fun GitHubRepoSearchResult(
             .padding(vertical = 6.dp)
             .clickable {
                 navController.navigate(
-                    com.example.gitly.presentation.navigation.NavRoutes.repoDetails(
+                    Routes.repoDetail(
                         repo.owner.login,
                         repo.name
                     )

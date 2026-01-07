@@ -50,6 +50,7 @@ import coil.request.ImageRequest
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
 import com.example.gitly.presentation.navigation.BottomNavItem
+import com.example.gitly.presentation.navigation.Routes
 import kotlin.math.min
 import java.text.NumberFormat
 import java.util.Locale
@@ -494,7 +495,7 @@ fun TrendingRepoCard(repo: GitHubRepo, navController: NavHostController) {
             .height(140.dp)
             .clickable {
                 navController.navigate(
-                    com.example.gitly.presentation.navigation.NavRoutes.repoDetails(
+                    Routes.repoDetail(
                         repo.owner.login,
                         repo.name
                     )
@@ -629,7 +630,7 @@ fun TrendingUserCard(user: GitHubUser, navController: NavHostController) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                navController.navigate("user/${user.login}")
+                navController.navigate(Routes.userDetail(user.login))
             },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -808,9 +809,7 @@ fun LanguageChip(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.clickable {
-            navController.navigate(BottomNavItem.RepoDetails.route)
-        },
+        modifier = modifier,
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),

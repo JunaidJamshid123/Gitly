@@ -6,6 +6,14 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// Load local.properties
+val localProperties = java.util.Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
+}
+
 android {
     namespace = "com.example.gitly"
     compileSdk = 36
@@ -18,6 +26,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Add GitHub token from local.properties to BuildConfig
+        buildConfigField("String", "GITHUB_TOKEN", "\"${localProperties.getProperty("GITHUB_TOKEN", "")}\"")
     }
 
     buildTypes {

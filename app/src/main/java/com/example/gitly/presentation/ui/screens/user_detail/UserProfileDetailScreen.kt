@@ -1,5 +1,6 @@
 package com.example.gitly.presentation.ui.screens.user_detail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +33,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.R
 import com.example.gitly.data.model.GitHubUser
+import com.example.gitly.presentation.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +44,7 @@ fun UserProfileDetailScreen(
     val viewModel: UserDetailViewModel = viewModel()
     val userDetailState by viewModel.userDetailState.collectAsState()
     val userReposState by viewModel.userReposState.collectAsState()
+    val contributionState by viewModel.contributionState.collectAsState()
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -146,7 +149,7 @@ fun UserProfileDetailScreen(
                                 // View Statistics Button
                                 ViewStatisticsButton(
                                     onClick = {
-                                        navController.navigate("user_statistics/${user.login}")
+                                        navController.navigate(Routes.userStatistics(user.login))
                                     }
                                 )
                                 
@@ -167,7 +170,7 @@ fun UserProfileDetailScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 
                                 // Contribution Graph
-                                ContributionSection()
+                                ContributionSection(contributionState = contributionState)
                             }
                             
                             // Floating Back Button
@@ -204,56 +207,89 @@ fun UserProfileDetailScreen(
 @Composable
 fun ProfileHeader(user: GitHubUser) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 40.dp), // Extra top padding for floating back button
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Profile Picture with AsyncImage
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(user.avatar_url)
-                .crossfade(true)
-                .placeholder(R.drawable.github_icon)
-                .error(R.drawable.github_icon)
-                .build(),
-            contentDescription = "Profile Picture",
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .border(3.dp, Color(0xFFE0E0E0), CircleShape),
-            contentScale = ContentScale.Crop
-        )
+        // Profile Picture with gradient border
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            // Gradient ring effect
+            Box(
+                modifier = Modifier
+                    .size(110.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF64B5F6),
+                                Color(0xFF42A5F5),
+                                Color(0xFF1E88E5)
+                            )
+                        )
+                    )
+            )
+            
+            // White ring
+            Box(
+                modifier = Modifier
+                    .size(104.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+            )
+            
+            // Profile image
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(user.avatar_url)
+                    .crossfade(true)
+                    .placeholder(R.drawable.github_icon)
+                    .error(R.drawable.github_icon)
+                    .build(),
+                contentDescription = "Profile Picture",
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
         
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         // Name
         Text(
             text = user.name ?: user.login,
-            fontSize = 22.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
         
         Spacer(modifier = Modifier.height(4.dp))
         
-        // Username
+        // Username with @ symbol
         Text(
             text = "@${user.login}",
-            fontSize = 14.sp,
-            color = Color.Gray
+            fontSize = 15.sp,
+            color = Color(0xFF64B5F6),
+            fontWeight = FontWeight.Medium
         )
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         
-        // Type (User/Organization)
+        // Type badge (User/Organization)
         Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = Color(0xFFF5F5F5)
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFE3F2FD),
+            border = BorderStroke(1.dp, Color(0xFF64B5F6).copy(alpha = 0.3f))
         ) {
             Text(
                 text = user.type ?: "User",
                 fontSize = 12.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF1976D2),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
     }
@@ -261,64 +297,104 @@ fun ProfileHeader(user: GitHubUser) {
 
 @Composable
 fun BioSection(user: GitHubUser) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = user.bio ?: "No bio available",
-            fontSize = 14.sp,
-            color = Color.Black,
-            lineHeight = 20.sp
-        )
+    if (!user.bio.isNullOrEmpty()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = user.bio,
+                fontSize = 15.sp,
+                color = Color(0xFF24292F),
+                lineHeight = 22.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
 @Composable
 fun StatsSection(user: GitHubUser) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF8F9FA),
+        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
-        // Followers
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = "Followers",
-                modifier = Modifier.size(18.dp),
-                tint = Color.Gray
+            // Followers
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = formatNumber(user.followers ?: 0),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Followers",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+            
+            // Divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(Color(0xFFE0E0E0))
             )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = formatNumber(user.followers ?: 0),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+            
+            // Following
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = formatNumber(user.following ?: 0),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Following",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+            
+            // Divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(Color(0xFFE0E0E0))
             )
-            Text(
-                text = " followers",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
+            
+            // Repos
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = formatNumber(user.public_repos ?: 0),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Repos",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
         }
-        
-        Spacer(modifier = Modifier.width(4.dp))
-        
-        Text(text = "·", fontSize = 14.sp, color = Color.Gray)
-        
-        Spacer(modifier = Modifier.width(4.dp))
-        
-        // Following
-        Text(
-            text = formatNumber(user.following ?: 0),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
-        Text(
-            text = " following",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
     }
 }
 
@@ -685,115 +761,234 @@ fun RepositoryCard(
 }
 
 @Composable
-fun ContributionSection() {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "518 contributions in the last year",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Black
-            )
-            
-            TextButton(onClick = { /* Open contribution settings */ }) {
-                Text(
-                    text = "2025",
-                    fontSize = 12.sp,
-                    color = Color(0xFF64B5F6)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Contribution Graph Placeholder
-        ContributionGraph()
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Legend
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Less",
-                fontSize = 11.sp,
-                color = Color.Gray
-            )
-            
-            Spacer(modifier = Modifier.width(4.dp))
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(Color(0xFFEBEDF0), RoundedCornerShape(2.dp))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(Color(0xFF9BE9A8), RoundedCornerShape(2.dp))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(Color(0xFF40C463), RoundedCornerShape(2.dp))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(Color(0xFF30A14E), RoundedCornerShape(2.dp))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(Color(0xFF216E39), RoundedCornerShape(2.dp))
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(4.dp))
-            
-            Text(
-                text = "More",
-                fontSize = 11.sp,
-                color = Color.Gray
-            )
-        }
-    }
+fun ContributionSection(contributionState: ContributionState) {
+    // Contribution Graph with real data and legend
+    ContributionGraph(contributionState = contributionState)
 }
 
 @Composable
-fun ContributionGraph() {
-    // Simplified contribution graph
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        // Sample contribution data (simplified)
-        repeat(52) { week ->
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                repeat(7) { day ->
-                    val intensity = (0..4).random()
-                    val color = when (intensity) {
-                        0 -> Color(0xFFEBEDF0)
-                        1 -> Color(0xFF9BE9A8)
-                        2 -> Color(0xFF40C463)
-                        3 -> Color(0xFF30A14E)
-                        else -> Color(0xFF216E39)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(color, RoundedCornerShape(2.dp))
+fun ContributionGraph(contributionState: ContributionState) {
+    var selectedYear by remember { mutableStateOf(2025) }
+    
+    when {
+        contributionState.isLoading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0xFF64B5F6),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        contributionState.contributionCalendar != null -> {
+            val calendar = contributionState.contributionCalendar
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Header with contribution count and year selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${calendar.totalContributions} contributions in the last year",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
                     )
+                    
+                    // Year selector
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFF64B5F6)
+                    ) {
+                        Text(
+                            text = selectedYear.toString(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Contribution grid (simplified without month labels)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    // Contribution squares
+                    calendar.weeks.forEach { week ->
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            week.contributionDays.forEach { day ->
+                                val color = when (day.level) {
+                                    0 -> Color(0xFFEBEDF0)
+                                    1 -> Color(0xFF9BE9A8)
+                                    2 -> Color(0xFF40C463)
+                                    3 -> Color(0xFF30A14E)
+                                    else -> Color(0xFF216E39)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(11.dp)
+                                        .background(color, RoundedCornerShape(2.dp))
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(10.dp))
+                
+                // Legend
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Less",
+                        fontSize = 10.sp,
+                        color = Color(0xFF656D76)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(4.dp))
+                    
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val colors = listOf(
+                            Color(0xFFEBEDF0),
+                            Color(0xFF9BE9A8),
+                            Color(0xFF40C463),
+                            Color(0xFF30A14E),
+                            Color(0xFF216E39)
+                        )
+                        colors.forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(11.dp)
+                                    .background(color, RoundedCornerShape(2.dp))
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(4.dp))
+                    
+                    Text(
+                        text = "More",
+                        fontSize = 10.sp,
+                        color = Color(0xFF656D76)
+                    )
+                }
+            }
+        }
+
+        else -> {
+            // Simplified fallback static graph
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Unable to load contributions",
+                        fontSize = 14.sp,
+                        color = Color(0xFF656D76)
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFF64B5F6)
+                    ) {
+                        Text(
+                            text = "2025",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Static fallback - simplified
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    repeat(52) { week ->
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            repeat(7) { day ->
+                                val intensity = (0..4).random()
+                                val color = when (intensity) {
+                                    0 -> Color(0xFFEBEDF0)
+                                    1 -> Color(0xFF9BE9A8)
+                                    2 -> Color(0xFF40C463)
+                                    3 -> Color(0xFF30A14E)
+                                    else -> Color(0xFF216E39)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(11.dp)
+                                        .background(color, RoundedCornerShape(2.dp))
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(10.dp))
+                
+                // Legend for fallback
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Less",
+                        fontSize = 10.sp,
+                        color = Color(0xFF656D76)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(4.dp))
+                    
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val colors = listOf(
+                            Color(0xFFEBEDF0),
+                            Color(0xFF9BE9A8),
+                            Color(0xFF40C463),
+                            Color(0xFF30A14E),
+                            Color(0xFF216E39)
+                        )
+                        colors.forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(11.dp)
+                                    .background(color, RoundedCornerShape(2.dp))
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(4.dp))
+                    
+                    Text(
+                        text = "More",
+                        fontSize = 10.sp,
+                        color = Color(0xFF656D76)
+                    )
+                    //..
                 }
             }
         }

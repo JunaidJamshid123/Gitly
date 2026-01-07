@@ -7,8 +7,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.gitly.SplashScreen
-import com.example.gitly.presentation.ui.screens.repo_detail.RepoDetailScreen
-import com.example.gitly.presentation.ui.screens.user_detail.UserDetailScreen
+import com.example.gitly.presentation.ui.screens.repo_details.RepoDetailsScreen
+import com.example.gitly.presentation.ui.screens.statistics.RepoStatisticsScreen
+import com.example.gitly.presentation.ui.screens.statistics.UserStatisticsScreen
+import com.example.gitly.presentation.ui.screens.user_detail.UserProfileDetailScreen
 
 /**
  * Root navigation graph for the app.
@@ -41,8 +43,9 @@ fun AppNavGraph(navController: NavHostController) {
             arguments = listOf(
                 navArgument("username") { type = NavType.StringType }
             )
-        ) {
-            UserDetailScreen(navController = navController)
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            UserProfileDetailScreen(navController = navController, username = username)
         }
         
         // Repository Detail Screen
@@ -52,8 +55,34 @@ fun AppNavGraph(navController: NavHostController) {
                 navArgument("owner") { type = NavType.StringType },
                 navArgument("repo") { type = NavType.StringType }
             )
-        ) {
-            RepoDetailScreen(navController = navController)
+        ) { backStackEntry ->
+            val owner = backStackEntry.arguments?.getString("owner") ?: ""
+            val repo = backStackEntry.arguments?.getString("repo") ?: ""
+            RepoDetailsScreen(owner = owner, repo = repo, navController = navController)
+        }
+        
+        // User Statistics Screen
+        composable(
+            route = Routes.USER_STATISTICS,
+            arguments = listOf(
+                navArgument("username") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            UserStatisticsScreen(navController = navController, username = username)
+        }
+        
+        // Repository Statistics Screen
+        composable(
+            route = Routes.REPO_STATISTICS,
+            arguments = listOf(
+                navArgument("owner") { type = NavType.StringType },
+                navArgument("repo") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val owner = backStackEntry.arguments?.getString("owner") ?: ""
+            val repo = backStackEntry.arguments?.getString("repo") ?: ""
+            RepoStatisticsScreen(navController = navController, owner = owner, repoName = repo)
         }
     }
 }

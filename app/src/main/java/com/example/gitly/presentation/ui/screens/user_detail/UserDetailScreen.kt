@@ -46,6 +46,9 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.R
+import com.example.gitly.presentation.navigation.Routes
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -57,19 +60,22 @@ fun formatNumber(number: Int): String {
         else -> NumberFormat.getNumberInstance(Locale.US).format(number)
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 @Composable
 fun UserDetailScreen(navController: NavHostController) {
     var searchText by remember { mutableStateOf("") }
     val viewModel: UserDetailViewModel = viewModel()
     val searchState by viewModel.searchState.collectAsState()
 
-    // Trigger search when searchText changes with longer debounce
-    LaunchedEffect(searchText) {
-        if (searchText.isNotEmpty() && searchText.length >= 3) { // Only search if 3+ characters
-            kotlinx.coroutines.delay(800) // Increased debounce to 800ms
-            viewModel.searchUsers(searchText)
-        }
+    // Improved debouncing with proper cancellation
+    LaunchedEffect(Unit) {
+        snapshotFlow { searchText }
+            .debounce(1500) // Increased to 1.5 seconds to reduce API calls
+            .collect { query ->
+                if (query.isNotEmpty() && query.length >= 3) {
+                    viewModel.searchUsers(query)
+                }
+            }
     }
     
     Surface(
@@ -287,7 +293,7 @@ fun GitHubUserSearchResult(
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .clickable {
-                navController.navigate("user/$username")
+                navController.navigate(Routes.userDetail(username))
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(

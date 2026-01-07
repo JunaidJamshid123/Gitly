@@ -30,6 +30,7 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.data.model.GitHubRepo
+import com.example.gitly.presentation.navigation.Routes
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -287,7 +288,7 @@ fun RepoDetailsContent(
                     modifier = Modifier
                         .weight(1f)
                         .clickable {
-                            navController.navigate("repo_statistics/${repository.owner.login}/${repository.name}")
+                            navController.navigate(Routes.repoStatistics(repository.owner.login, repository.name))
                         },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF66BB6A)),
