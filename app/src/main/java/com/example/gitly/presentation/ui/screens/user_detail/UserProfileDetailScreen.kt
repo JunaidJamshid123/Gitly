@@ -34,6 +34,7 @@ import coil.request.ImageRequest
 import com.example.gitly.R
 import com.example.gitly.data.model.GitHubUser
 import com.example.gitly.presentation.navigation.Routes
+import com.example.gitly.presentation.ui.components.AnimatedLoadingScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,13 +66,7 @@ fun UserProfileDetailScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 isLoading -> {
-                    // Loading state
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Color(0xFF64B5F6))
-                    }
+                    AnimatedLoadingScreen()
                 }
                 userDetailState == null -> {
                     // Error state

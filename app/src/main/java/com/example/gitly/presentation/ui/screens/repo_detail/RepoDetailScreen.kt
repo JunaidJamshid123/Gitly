@@ -46,6 +46,7 @@ import coil.request.ImageRequest
 import com.example.gitly.R
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.presentation.navigation.Routes
+import com.example.gitly.presentation.ui.components.AnimatedLoadingScreen
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import java.text.SimpleDateFormat
@@ -128,12 +129,7 @@ fun RepoDetailScreen(navController: NavHostController) {
 
             // Loading state
             if (searchState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color(0xFF64B5F6))
-                }
+                AnimatedLoadingScreen()
             }
             // Error state
             if (searchState.error != null) {

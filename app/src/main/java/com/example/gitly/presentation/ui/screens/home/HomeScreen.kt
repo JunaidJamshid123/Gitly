@@ -28,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +53,8 @@ import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
 import com.example.gitly.presentation.navigation.BottomNavItem
 import com.example.gitly.presentation.navigation.Routes
+import com.example.gitly.presentation.ui.components.AnimatedLoadingScreen
+import com.example.gitly.R
 import kotlin.math.min
 import java.text.NumberFormat
 import java.util.Locale
@@ -65,13 +69,8 @@ fun HomeScreen(navController: NavHostController) {
         color = Color.White
     ) {
         if (homeState.isLoading) {
-            // Loading State
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF64B5F6))
-            }
+            // Custom Animated Loading State
+            AnimatedLoadingScreen()
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -131,42 +130,97 @@ fun HomeScreen(navController: NavHostController) {
 fun HeroSection(userName: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.Start
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFF9FAFB),
+                            Color(0xFFFFFFFF)
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "👋 Welcome Back,",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.3.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = userName,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827),
-                letterSpacing = (-0.5).sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "Discover the world of open source",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color(0xFF9CA3AF),
-                lineHeight = 20.sp,
-                letterSpacing = 0.2.sp
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(28.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF6366F1),
+                                        Color(0xFF8B5CF6)
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "👋",
+                            fontSize = 28.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Welcome Back,",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF6B7280),
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = userName,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF111827),
+                            letterSpacing = (-0.5).sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFFEEF2FF),
+                                    Color(0xFFF5F3FF)
+                                )
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "✨ Discover trending repos, top developers, and insights from the world of open source",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4F46E5),
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.2.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -221,58 +275,80 @@ fun GitHubFunFactCard() {
                     }
                 }
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(1.dp, Color(0xFFEEF2FF))
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFEEF2FF),
+                            Color(0xFFE0E7FF)
+                        )
+                    )
+                )
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFF3F4F6))
-                    .graphicsLayer {
-                        rotationZ = (1f - animatedProgress) * 360f
-                        alpha = animatedProgress
-                    },
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "💡",
-                    fontSize = 22.sp
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(14.dp))
-            
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .graphicsLayer {
-                        alpha = animatedProgress
-                        translationX = (1f - animatedProgress) * 20f
-                    }
-            ) {
-                Text(
-                    text = "Did you know?",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF6366F1),
-                    letterSpacing = 0.3.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = facts[currentFactIndex],
-                    fontSize = 14.sp,
-                    color = Color(0xFF374151),
-                    lineHeight = 20.sp,
-                    letterSpacing = 0.1.sp
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF6366F1),
+                                    Color(0xFF8B5CF6)
+                                )
+                            )
+                        )
+                        .graphicsLayer {
+                            rotationZ = (1f - animatedProgress) * 360f
+                            alpha = animatedProgress
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "💡",
+                        fontSize = 24.sp
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .graphicsLayer {
+                            alpha = animatedProgress
+                            translationX = (1f - animatedProgress) * 20f
+                        }
+                ) {
+                    Text(
+                        text = "Did you know?",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6366F1),
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = facts[currentFactIndex],
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4F46E5),
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.1.sp
+                    )
+                }
             }
         }
     }
@@ -292,20 +368,40 @@ fun PopularLanguagesSection() {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(24.dp)
         ) {
-            Text(
-                text = "Popular Languages",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827),
-                letterSpacing = (-0.3).sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Popular Languages",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF111827),
+                    letterSpacing = (-0.3).sp
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFEEF2FF))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "🔥 Trending",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6366F1)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -466,13 +562,22 @@ fun TrendingReposSection(repos: List<GitHubRepo>, navController: NavHostControll
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Trending Repositories",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827),
-                letterSpacing = (-0.3).sp
-            )
+            Column {
+                Text(
+                    text = "🚀 Trending Repositories",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF111827),
+                    letterSpacing = (-0.3).sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Hot projects right now",
+                    fontSize = 13.sp,
+                    color = Color(0xFF6B7280),
+                    letterSpacing = 0.2.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -491,8 +596,8 @@ fun TrendingReposSection(repos: List<GitHubRepo>, navController: NavHostControll
 fun TrendingRepoCard(repo: GitHubRepo, navController: NavHostController) {
     Card(
         modifier = Modifier
-            .width(280.dp)
-            .height(140.dp)
+            .width(290.dp)
+            .height(150.dp)
             .clickable {
                 navController.navigate(
                     Routes.repoDetail(
@@ -501,96 +606,119 @@ fun TrendingRepoCard(repo: GitHubRepo, navController: NavHostController) {
                     )
                 )
             },
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp)
-        ) {
-            // Owner and Repo Name
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(repo.owner.avatarUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Owner Avatar",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFAFAFA),
+                            Color(0xFFFFFFFF)
+                        )
+                    )
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // Owner and Repo Name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(repo.owner.avatarUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Owner Avatar",
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF3F4F6)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "${repo.owner.login}/${repo.name}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6366F1),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Description
                 Text(
-                    text = "${repo.owner.login}/${repo.name}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF64B5F6),
-                    maxLines = 1,
+                    text = repo.description ?: "No description available",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6B7280),
+                    lineHeight = 18.sp,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Description
-            Text(
-                text = repo.description ?: "No description available",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+                // Stats Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Language
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (repo.language != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(getLanguageColor(repo.language))
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = repo.language,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF374151)
+                            )
+                        }
+                    }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Stats Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Language
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (repo.language != null) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(getLanguageColor(repo.language))
+                    // Stars
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFEEF2FF))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Stars",
+                            tint = Color(0xFF6366F1),
+                            modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = repo.language,
-                            fontSize = 11.sp,
-                            color = Color.Black
+                            text = formatNumber(repo.stargazersCount ?: 0),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4F46E5)
                         )
                     }
-                }
-
-                // Stars
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Stars",
-                        tint = Color(0xFFFFA726),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = formatNumber(repo.stargazersCount ?: 0),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
-                    )
                 }
             }
         }
@@ -605,13 +733,22 @@ fun TrendingUsersSection(users: List<GitHubUser>, navController: NavHostControll
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Top Developers",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827),
-                letterSpacing = (-0.3).sp
-            )
+            Column {
+                Text(
+                    text = "⭐ Top Developers",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF111827),
+                    letterSpacing = (-0.3).sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Community leaders to follow",
+                    fontSize = 13.sp,
+                    color = Color(0xFF6B7280),
+                    letterSpacing = 0.2.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -632,69 +769,113 @@ fun TrendingUserCard(user: GitHubUser, navController: NavHostController) {
             .clickable {
                 navController.navigate(Routes.userDetail(user.login))
             },
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFFAFAFA),
+                            Color(0xFFFFFFFF)
+                        )
+                    )
+                )
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(user.avatar_url)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "User Avatar",
+            Row(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = user.name ?: user.login,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    letterSpacing = 0.sp
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "@${user.login}",
-                    fontSize = 13.sp,
-                    color = Color(0xFF6B7280),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = formatNumber(user.followers ?: 0),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827),
-                    letterSpacing = (-0.2).sp
-                )
-                Text(
-                    text = "followers",
-                    fontSize = 11.sp,
-                    color = Color(0xFF9CA3AF),
-                    letterSpacing = 0.2.sp
-                )
+                Box(
+                    modifier = Modifier
+                        .size(58.dp)
+                        .clip(CircleShape)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFEEF2FF),
+                                    Color(0xFFE0E7FF)
+                                )
+                            )
+                        )
+                        .padding(2.dp)
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(user.avatar_url)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = user.name ?: user.login,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        letterSpacing = 0.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "@${user.login}",
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF6366F1),
+                                    Color(0xFF8B5CF6)
+                                )
+                            )
+                        )
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = formatNumber(user.followers ?: 0),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            letterSpacing = (-0.2).sp
+                        )
+                        Text(
+                            text = "followers",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFE0E7FF),
+                            letterSpacing = 0.3.sp
+                        )
+                    }
+                }
             }
         }
     }
