@@ -45,50 +45,7 @@ fun NavigationDrawerContent(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Main Menu Items
-            DrawerMenuItem(
-                icon = Icons.Outlined.Settings,
-                title = "Settings",
-                onClick = {
-                    onItemClick(DrawerItem.Settings)
-                    onClose()
-                }
-            )
-            
-            DrawerMenuItem(
-                icon = Icons.Outlined.Favorite,
-                title = "Saved Items",
-                onClick = {
-                    onItemClick(DrawerItem.SavedItems)
-                    onClose()
-                }
-            )
-            
-            DrawerMenuItem(
-                icon = Icons.Outlined.Star,
-                title = "Search History",
-                onClick = {
-                    onItemClick(DrawerItem.History)
-                    onClose()
-                }
-            )
-            
-            DrawerMenuItem(
-                icon = Icons.Outlined.Star,
-                title = "Offline Mode",
-                onClick = {
-                    onItemClick(DrawerItem.OfflineMode)
-                    onClose()
-                }
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Divider(color = Color(0xFFE0E0E0), thickness = 1.dp)
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Additional Items
+            // Menu Items
             DrawerMenuItem(
                 icon = Icons.Outlined.Star,
                 title = "Rate Us",
@@ -230,10 +187,6 @@ fun DrawerFooter() {
 
 // Drawer menu items enum
 sealed class DrawerItem {
-    object Settings : DrawerItem()
-    object SavedItems : DrawerItem()
-    object History : DrawerItem()
-    object OfflineMode : DrawerItem()
     object RateUs : DrawerItem()
     object ShareApp : DrawerItem()
     object About : DrawerItem()

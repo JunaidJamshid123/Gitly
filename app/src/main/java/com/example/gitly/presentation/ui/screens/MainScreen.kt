@@ -1,6 +1,7 @@
 package com.example.gitly.presentation.ui.screens
 
-import android.widget.Toast
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +35,9 @@ import com.example.gitly.presentation.navigation.DrawerItem
 import com.example.gitly.presentation.navigation.NavigationDrawerContent
 import com.example.gitly.presentation.navigation.TopBar
 import com.example.gitly.presentation.ui.screens.AI_Insights.AI_InsightScreeen
+import com.example.gitly.presentation.ui.screens.about.AboutScreen
 import com.example.gitly.presentation.ui.screens.favorites.FavoritesScreen
+import com.example.gitly.presentation.ui.screens.help.HelpScreen
 import com.example.gitly.presentation.ui.screens.home.HomeScreen
 import com.example.gitly.presentation.ui.screens.repo_detail.RepoDetailScreen
 import com.example.gitly.presentation.ui.screens.repo_details.RepoDetailsScreen
@@ -57,31 +60,22 @@ fun MainScreen(navController: NavHostController) {
         drawerContent = {
             NavigationDrawerContent(
                 onItemClick = { item ->
+                    scope.launch {
+                        drawerState.close()
+                    }
                     // Handle drawer item clicks
                     when (item) {
-                        DrawerItem.Settings -> {
-                            Toast.makeText(context, "Settings clicked", Toast.LENGTH_SHORT).show()
-                        }
-                        DrawerItem.SavedItems -> {
-                            Toast.makeText(context, "Saved Items clicked", Toast.LENGTH_SHORT).show()
-                        }
-                        DrawerItem.History -> {
-                            Toast.makeText(context, "History clicked", Toast.LENGTH_SHORT).show()
-                        }
-                        DrawerItem.OfflineMode -> {
-                            Toast.makeText(context, "Offline Mode clicked", Toast.LENGTH_SHORT).show()
-                        }
                         DrawerItem.RateUs -> {
-                            Toast.makeText(context, "Rate Us clicked", Toast.LENGTH_SHORT).show()
+                            rateApp(context)
                         }
                         DrawerItem.ShareApp -> {
-                            Toast.makeText(context, "Share App clicked", Toast.LENGTH_SHORT).show()
+                            shareApp(context)
                         }
                         DrawerItem.About -> {
-                            Toast.makeText(context, "About clicked", Toast.LENGTH_SHORT).show()
+                            bottomNavController.navigate("about")
                         }
                         DrawerItem.Help -> {
-                            Toast.makeText(context, "Help & Support clicked", Toast.LENGTH_SHORT).show()
+                            bottomNavController.navigate("help")
                         }
                     }
                 },
@@ -176,7 +170,52 @@ fun MainScreen(navController: NavHostController) {
                     val repo = backStackEntry.arguments?.getString("repo") ?: ""
                     RepoStatisticsScreen(bottomNavController, owner, repo)
                 }
+                
+                // About Screen
+                composable("about") {
+                    AboutScreen(bottomNavController)
+                }
+                
+                // Help & Support Screen
+                composable("help") {
+                    HelpScreen(bottomNavController)
+                }
             }
         }
+    }
+}
+
+// Helper function to rate app
+private fun rateApp(context: android.content.Context) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("market://details?id=${context.packageName}")
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // Fallback to browser
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
+        }
+        context.startActivity(intent)
+    }
+}
+
+// Helper function to share app
+private fun shareApp(context: android.content.Context) {
+    try {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Check out Gitly!")
+            putExtra(
+                Intent.EXTRA_TEXT,
+                "Discover GitHub like never before with Gitly! 🚀\n\n" +
+                        "Explore trending repositories, find talented developers, and get AI-powered insights.\n\n" +
+                        "Download now: https://play.google.com/store/apps/details?id=${context.packageName}"
+            )
+        }
+        context.startActivity(Intent.createChooser(intent, "Share Gitly"))
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
