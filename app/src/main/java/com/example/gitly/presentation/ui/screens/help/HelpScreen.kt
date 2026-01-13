@@ -8,10 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -38,6 +38,7 @@ fun HelpScreen(navController: NavHostController) {
     val context = LocalContext.current
     val primaryColor = Color(0xFF5B5FC7)
     val backgroundColor = Color(0xFFF5F7FA)
+    val cardShape = RoundedCornerShape(16.dp)
     
     val faqs = listOf(
         FAQ(
@@ -77,49 +78,22 @@ fun HelpScreen(navController: NavHostController) {
     var expandedFaqIndex by remember { mutableStateOf<Int?>(null) }
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Help & Support",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        }
+        containerColor = backgroundColor
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .background(backgroundColor)
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
+                SectionCard(shape = cardShape) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
@@ -136,22 +110,22 @@ fun HelpScreen(navController: NavHostController) {
                                 modifier = Modifier.size(40.dp)
                             )
                         }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
                         Text(
-                            text = "How can we help you?",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1F2937)
+                            text = "Help & Support",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF111827)
                         )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
                         Text(
-                            text = "Find answers to common questions or get in touch with our support team",
+                            text = "Find answers or reach our team whenever you need a hand.",
                             fontSize = 14.sp,
-                            color = Color.Gray,
+                            color = Color(0xFF4B5563),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             lineHeight = 20.sp
                         )
@@ -161,22 +135,33 @@ fun HelpScreen(navController: NavHostController) {
             
             // Quick Actions
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickActionCard(
-                        icon = Icons.Outlined.Email,
-                        title = "Email Us",
-                        onClick = { sendEmail(context) },
-                        modifier = Modifier.weight(1f)
+                SectionCard(shape = cardShape) {
+                    Text(
+                        text = "Quick actions",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF111827)
                     )
-                    QuickActionCard(
-                        icon = Icons.Outlined.BugReport,
-                        title = "Report Bug",
-                        onClick = { openUrl(context, "https://github.com/issues") },
-                        modifier = Modifier.weight(1f)
-                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        QuickActionCard(
+                            icon = Icons.Outlined.Email,
+                            title = "Email Us",
+                            onClick = { sendEmail(context) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickActionCard(
+                            icon = Icons.Outlined.BugReport,
+                            title = "Report Bug",
+                            onClick = { openUrl(context, "https://github.com/issues") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
             
@@ -186,8 +171,8 @@ fun HelpScreen(navController: NavHostController) {
                     text = "Frequently Asked Questions",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1F2937),
-                    modifier = Modifier.padding(top = 8.dp)
+                    color = Color(0xFF111827),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
                 )
             }
             
@@ -204,51 +189,40 @@ fun HelpScreen(navController: NavHostController) {
             
             // Contact Section
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
-                    ) {
-                        Text(
-                            text = "Still Need Help?",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1F2937)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        ContactItem(
-                            icon = Icons.Outlined.Email,
-                            title = "Email Support",
-                            subtitle = "support@gitly.app",
-                            onClick = { sendEmail(context) }
-                        )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        ContactItem(
-                            icon = Icons.Outlined.Language,
-                            title = "Documentation",
-                            subtitle = "Visit our docs",
-                            onClick = { openUrl(context, "https://github.com") }
-                        )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        ContactItem(
-                            icon = Icons.Outlined.Forum,
-                            title = "Community",
-                            subtitle = "Join discussions",
-                            onClick = { openUrl(context, "https://github.com/discussions") }
-                        )
-                    }
+                SectionCard(shape = cardShape) {
+                    Text(
+                        text = "Still need help?",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ContactItem(
+                        icon = Icons.Outlined.Email,
+                        title = "Email Support",
+                        subtitle = "support@gitly.app",
+                        onClick = { sendEmail(context) }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ContactItem(
+                        icon = Icons.Outlined.Language,
+                        title = "Documentation",
+                        subtitle = "Visit our docs",
+                        onClick = { openUrl(context, "https://github.com") }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ContactItem(
+                        icon = Icons.Outlined.Forum,
+                        title = "Community",
+                        subtitle = "Join discussions",
+                        onClick = { openUrl(context, "https://github.com/discussions") }
+                    )
                 }
             }
             
@@ -265,6 +239,27 @@ fun HelpScreen(navController: NavHostController) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            content = content
+        )
     }
 }
 

@@ -8,10 +8,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -37,63 +37,37 @@ fun AboutScreen(navController: NavHostController) {
     val context = LocalContext.current
     val primaryColor = Color(0xFF5B5FC7)
     val backgroundColor = Color(0xFFF5F7FA)
+    val cardShape = RoundedCornerShape(16.dp)
+    val dividerColor = Color(0xFFE5E7EB)
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "About",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
-        }
+        containerColor = backgroundColor
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .background(backgroundColor)
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // App Icon and Name
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
+                SectionCard(shape = cardShape) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
+                            .padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(100.dp)
+                                .size(96.dp)
                                 .clip(RoundedCornerShape(24.dp))
                                 .background(
                                     brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            primaryColor,
-                                            Color(0xFF8B5CF6)
-                                        )
+                                        colors = listOf(primaryColor, Color(0xFF8B5CF6))
                                     )
                                 ),
                             contentAlignment = Alignment.Center
@@ -101,33 +75,33 @@ fun AboutScreen(navController: NavHostController) {
                             Image(
                                 painter = painterResource(id = R.drawable.github_icon),
                                 contentDescription = "App Icon",
-                                modifier = Modifier.size(60.dp)
+                                modifier = Modifier.size(56.dp)
                             )
                         }
-                        
-                        Spacer(modifier = Modifier.height(20.dp))
-                        
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
                         Text(
                             text = "Gitly",
-                            fontSize = 28.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1F2937)
+                            color = Color(0xFF111827)
                         )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
                         Text(
                             text = "Version 1.0.0",
-                            fontSize = 14.sp,
-                            color = Color.Gray
+                            fontSize = 13.sp,
+                            color = Color(0xFF6B7280)
                         )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
                         Text(
                             text = "Your GitHub Explorer",
-                            fontSize = 15.sp,
-                            color = Color(0xFF6B7280),
+                            fontSize = 14.sp,
+                            color = Color(0xFF4B5563),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -136,194 +110,151 @@ fun AboutScreen(navController: NavHostController) {
             
             // Description
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
+                SectionCard(shape = cardShape) {
+                    Text(
+                        text = "About Gitly",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Gitly is your companion for exploring GitHub. Discover trending repositories, find talented developers, track your favorites, and get AI-powered insights in one focused place.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF4B5563),
+                        lineHeight = 22.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "About Gitly",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1F2937)
+                        FeatureChip(
+                            icon = Icons.Outlined.TrendingUp,
+                            text = "Trending",
+                            modifier = Modifier.weight(1f)
                         )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Text(
-                            text = "Gitly is your ultimate companion for exploring the GitHub ecosystem. " +
-                                    "Discover trending repositories, find talented developers, " +
-                                    "track your favorite projects, and get AI-powered insights - " +
-                                    "all in one beautiful, intuitive app.",
-                            fontSize = 14.sp,
-                            color = Color(0xFF6B7280),
-                            lineHeight = 22.sp
+                        FeatureChip(
+                            icon = Icons.Outlined.Search,
+                            text = "Explore",
+                            modifier = Modifier.weight(1f)
                         )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            FeatureChip(
-                                icon = Icons.Outlined.TrendingUp,
-                                text = "Trending",
-                                modifier = Modifier.weight(1f)
-                            )
-                            FeatureChip(
-                                icon = Icons.Outlined.Search,
-                                text = "Explore",
-                                modifier = Modifier.weight(1f)
-                            )
-                            FeatureChip(
-                                icon = Icons.Outlined.AutoAwesome,
-                                text = "AI Insights",
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                        FeatureChip(
+                            icon = Icons.Outlined.AutoAwesome,
+                            text = "AI Insights",
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
             
             // Developer Info
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
-                    ) {
-                        Text(
-                            text = "Developer",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1F2937)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Text(
-                            text = "Made with ❤️ by passionate developers who love GitHub and open source",
-                            fontSize = 14.sp,
-                            color = Color(0xFF6B7280),
-                            lineHeight = 22.sp
-                        )
-                    }
+                SectionCard(shape = cardShape) {
+                    Text(
+                        text = "Developer",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Made with ❤️ by developers who love GitHub and open source.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF4B5563),
+                        lineHeight = 22.sp
+                    )
                 }
             }
             
             // Contact & Links
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Connect With Us",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1F2937),
-                            modifier = Modifier.padding(20.dp).padding(bottom = 4.dp)
-                        )
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.Code,
-                            title = "Source Code",
-                            subtitle = "View on GitHub",
-                            onClick = { openUrl(context, "https://github.com") }
-                        )
-                        
-                        Divider(color = Color(0xFFE5E7EB))
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.BugReport,
-                            title = "Report Issue",
-                            subtitle = "Found a bug? Let us know",
-                            onClick = { openUrl(context, "https://github.com/issues") }
-                        )
-                        
-                        Divider(color = Color(0xFFE5E7EB))
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.Star,
-                            title = "Rate on Play Store",
-                            subtitle = "Share your feedback",
-                            onClick = { rateApp(context) }
-                        )
-                        
-                        Divider(color = Color(0xFFE5E7EB))
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.Share,
-                            title = "Share App",
-                            subtitle = "Tell your friends",
-                            onClick = { shareApp(context) }
-                        )
-                    }
+                SectionCard(shape = cardShape) {
+                    Text(
+                        text = "Connect With Us",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.Code,
+                        title = "Source Code",
+                        subtitle = "View on GitHub",
+                        onClick = { openUrl(context, "https://github.com") }
+                    )
+
+                    Divider(color = dividerColor)
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "Report Issue",
+                        subtitle = "Found a bug? Let us know",
+                        onClick = { openUrl(context, "https://github.com/issues") }
+                    )
+
+                    Divider(color = dividerColor)
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.Star,
+                        title = "Rate on Play Store",
+                        subtitle = "Share your feedback",
+                        onClick = { rateApp(context) }
+                    )
+
+                    Divider(color = dividerColor)
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.Share,
+                        title = "Share App",
+                        subtitle = "Tell your friends",
+                        onClick = { shareApp(context) }
+                    )
                 }
             }
             
             // Legal
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Legal",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1F2937),
-                            modifier = Modifier.padding(20.dp).padding(bottom = 4.dp)
-                        )
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.Policy,
-                            title = "Privacy Policy",
-                            subtitle = "How we handle your data",
-                            onClick = { openUrl(context, "https://github.com") }
-                        )
-                        
-                        Divider(color = Color(0xFFE5E7EB))
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.Description,
-                            title = "Terms of Service",
-                            subtitle = "App usage terms",
-                            onClick = { openUrl(context, "https://github.com") }
-                        )
-                        
-                        Divider(color = Color(0xFFE5E7EB))
-                        
-                        AboutLinkItem(
-                            icon = Icons.Outlined.Security,
-                            title = "Licenses",
-                            subtitle = "Open source licenses",
-                            onClick = { /* Open licenses screen */ }
-                        )
-                    }
+                SectionCard(shape = cardShape) {
+                    Text(
+                        text = "Legal",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.Policy,
+                        title = "Privacy Policy",
+                        subtitle = "How we handle your data",
+                        onClick = { openUrl(context, "https://github.com") }
+                    )
+
+                    Divider(color = dividerColor)
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.Description,
+                        title = "Terms of Service",
+                        subtitle = "App usage terms",
+                        onClick = { openUrl(context, "https://github.com") }
+                    )
+
+                    Divider(color = dividerColor)
+
+                    AboutLinkItem(
+                        icon = Icons.Outlined.Security,
+                        title = "Licenses",
+                        subtitle = "Open source licenses",
+                        onClick = { /* Open licenses screen */ }
+                    )
                 }
             }
             
@@ -349,6 +280,27 @@ fun AboutScreen(navController: NavHostController) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionCard(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            content = content
+        )
     }
 }
 
