@@ -1,7 +1,7 @@
 # 🚀 Gitly - GitHub Explorer Application
 
 <div align="center">
-  <img src="app/src/main/res/drawable/github.png" alt="Gitly Logo" width="120"/>
+  <img src="screenshots/github.png" alt="Gitly Logo" width="120"/>
   
   ### Explore GitHub Like Never Before
   
@@ -21,73 +21,73 @@
   <table>
     <tr>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss1.png" width="200"/><br/>
+        <img src="screenshots/ss1.png" width="200"/><br/>
         <b>Splash Screen</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss2.png" width="200"/><br/>
+        <img src="screenshots/ss2.png" width="200"/><br/>
         <b>Loading Animation</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss3.png" width="200"/><br/>
+        <img src="screenshots/ss3.png" width="200"/><br/>
         <b>Home Screen</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss4.png" width="200"/><br/>
+        <img src="screenshots/ss4.png" width="200"/><br/>
         <b>Help & Guide</b>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss5.png" width="200"/><br/>
+        <img src="screenshots/ss5.png" width="200"/><br/>
         <b>About GitHub</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss6.png" width="200"/><br/>
+        <img src="screenshots/ss6.png" width="200"/><br/>
         <b>User Search</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss7.png" width="200"/><br/>
+        <img src="screenshots/ss7.png" width="200"/><br/>
         <b>User Profile</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss8.png" width="200"/><br/>
+        <img src="screenshots/ss8.png" width="200"/><br/>
         <b>User Details</b>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss9.png" width="200"/><br/>
+        <img src="screenshots/ss9.png" width="200"/><br/>
         <b>Repository List</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss10.png" width="200"/><br/>
+        <img src="screenshots/ss10.png" width="200"/><br/>
         <b>AI Chat Interface</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss11.png" width="200"/><br/>
+        <img src="screenshots/ss11.png" width="200"/><br/>
         <b>AI Insights</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss12.png" width="200"/><br/>
+        <img src="screenshots/ss12.png" width="200"/><br/>
         <b>Repository Details</b>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss13.png" width="200"/><br/>
+        <img src="screenshots/ss13.png" width="200"/><br/>
         <b>Repo Analytics</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss14.png" width="200"/><br/>
+        <img src="screenshots/ss14.png" width="200"/><br/>
         <b>Favorites Page</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/ss15.png" width="200"/><br/>
+        <img src="screenshots/ss15.png" width="200"/><br/>
         <b>Statistics View</b>
       </td>
       <td align="center">
-        <img src="app/src/main/res/drawable/github_icon.png" width="200"/><br/>
+        <img src="screenshots/github_icon.png" width="200"/><br/>
         <b>GitHub Integration</b>
       </td>
     </tr>
