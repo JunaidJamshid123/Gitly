@@ -1,5 +1,6 @@
 package com.example.gitly.di
 
+import com.example.gitly.data.remote.api.GeminiApiService
 import com.example.gitly.data.remote.api.GitHubApiService
 import com.example.gitly.data.remote.interceptor.AuthInterceptor
 import dagger.Module
@@ -11,6 +12,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -51,6 +53,7 @@ object NetworkModule {
     
     @Provides
     @Singleton
+    @Named("github")
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl(GitHubApiService.BASE_URL)
@@ -61,7 +64,24 @@ object NetworkModule {
     
     @Provides
     @Singleton
-    fun provideGitHubApiService(retrofit: Retrofit): GitHubApiService {
+    @Named("gemini")
+    fun provideGeminiRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(GeminiApiService.BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideGitHubApiService(@Named("github") retrofit: Retrofit): GitHubApiService {
         return retrofit.create(GitHubApiService::class.java)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideGeminiApiService(@Named("gemini") retrofit: Retrofit): GeminiApiService {
+        return retrofit.create(GeminiApiService::class.java)
     }
 }

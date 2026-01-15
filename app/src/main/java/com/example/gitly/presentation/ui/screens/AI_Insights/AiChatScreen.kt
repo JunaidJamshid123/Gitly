@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,7 +55,7 @@ private val AiBubbleColor = Color.White
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AI_InsightScreeen(navController: NavHostController) {
-    val viewModel: AiChatViewModel = viewModel()
+    val viewModel: AiChatViewModel = hiltViewModel()
     val chatState by viewModel.chatState.collectAsState()
     
     var messageText by remember { mutableStateOf("") }

@@ -10,12 +10,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
+import com.example.gitly.data.repository.GeminiRepository
 import com.example.gitly.presentation.navigation.AppNavGraph
 import com.example.gitly.presentation.theme.GitlyTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var geminiRepository: GeminiRepository
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -30,7 +36,10 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    AppNavGraph(navController = navController)
+                    AppNavGraph(
+                        navController = navController,
+                        geminiRepository = geminiRepository
+                    )
                 }
             }
         }

@@ -8,11 +8,16 @@ import com.example.gitly.data.local.repository.FavoritesRepository
 import com.example.gitly.data.model.ContributionCalendar
 import com.example.gitly.data.model.GitHubRepo
 import com.example.gitly.data.model.GitHubUser
+import com.example.gitly.data.repository.GeminiRepository
 import com.example.gitly.data.repository.GitHubRepository
+import com.example.gitly.data.repository.LanguageStat
+import com.example.gitly.data.repository.RepoSummary
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class UserSearchState(
     val isLoading: Boolean = false,
@@ -37,6 +42,13 @@ data class ContributionState(
     val error: String? = null
 )
 
+data class AiSummaryState(
+    val isLoading: Boolean = false,
+    val summary: String? = null,
+    val error: String? = null,
+    val showDialog: Boolean = false
+)
+
 class UserDetailViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = GitHubRepository()
     private val database = AppDatabase.getDatabase(application)
@@ -44,6 +56,13 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
         database.favoriteRepoDao(),
         database.favoriteUserDao()
     )
+    
+    // GeminiRepository will be set via setter injection from the screen
+    private var geminiRepository: GeminiRepository? = null
+    
+    fun setGeminiRepository(repo: GeminiRepository) {
+        geminiRepository = repo
+    }
     
     private val _searchState = MutableStateFlow(UserSearchState())
     val searchState: StateFlow<UserSearchState> = _searchState.asStateFlow()
@@ -56,6 +75,9 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
     
     private val _contributionState = MutableStateFlow(ContributionState())
     val contributionState: StateFlow<ContributionState> = _contributionState.asStateFlow()
+    
+    private val _aiSummaryState = MutableStateFlow(AiSummaryState())
+    val aiSummaryState: StateFlow<AiSummaryState> = _aiSummaryState.asStateFlow()
     
     // Cache to prevent duplicate searches
     private val searchCache = mutableMapOf<String, List<GitHubUser>>()
@@ -241,5 +263,101 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
     fun clearUserDetails() {
         _userDetailState.value = null
         _userReposState.value = UserReposState()
+    }
+    
+    /**
+     * Generate AI summary for the current user profile
+     */
+    fun generateAiSummary() {
+        val gemini = geminiRepository ?: run {
+            _aiSummaryState.value = AiSummaryState(
+                error = "AI service not available",
+                showDialog = true
+            )
+            return
+        }
+        
+        val user = _userDetailState.value ?: run {
+            _aiSummaryState.value = AiSummaryState(
+                error = "User data not loaded",
+                showDialog = true
+            )
+            return
+        }
+        
+        val repos = _userReposState.value.repos
+        val contributions = _contributionState.value.contributionCalendar
+        
+        viewModelScope.launch {
+            _aiSummaryState.value = AiSummaryState(isLoading = true, showDialog = true)
+            
+            // Calculate language statistics from repos
+            val languageStats = calculateLanguageStats(repos)
+            
+            // Convert repos to RepoSummary
+            val repoSummaries = repos.map { repo ->
+                RepoSummary(
+                    name = repo.name,
+                    description = repo.description,
+                    stars = repo.stargazersCount ?: 0,
+                    forks = repo.forksCount ?: 0,
+                    language = repo.language
+                )
+            }
+            
+            gemini.generateUserSummary(
+                username = user.login,
+                name = user.name,
+                bio = user.bio,
+                location = user.location,
+                company = user.company,
+                blog = user.blog,
+                twitterUsername = user.twitter_username,
+                publicRepos = user.public_repos,
+                publicGists = user.public_gists,
+                followers = user.followers,
+                following = user.following,
+                createdAt = user.created_at,
+                repositories = repoSummaries,
+                totalContributions = contributions?.totalContributions,
+                languageStats = languageStats
+            ).fold(
+                onSuccess = { summary ->
+                    _aiSummaryState.value = AiSummaryState(
+                        summary = summary,
+                        showDialog = true
+                    )
+                },
+                onFailure = { exception ->
+                    _aiSummaryState.value = AiSummaryState(
+                        error = exception.message ?: "Failed to generate summary",
+                        showDialog = true
+                    )
+                }
+            )
+        }
+    }
+    
+    private fun calculateLanguageStats(repos: List<GitHubRepo>): Map<String, LanguageStat> {
+        val languageCounts = mutableMapOf<String, Int>()
+        
+        repos.forEach { repo ->
+            repo.language?.let { lang ->
+                languageCounts[lang] = (languageCounts[lang] ?: 0) + 1
+            }
+        }
+        
+        val total = languageCounts.values.sum().toFloat()
+        
+        return languageCounts.mapValues { (_, count) ->
+            LanguageStat(
+                repoCount = count,
+                percentage = if (total > 0) (count / total * 100) else 0f
+            )
+        }
+    }
+    
+    fun dismissAiSummaryDialog() {
+        _aiSummaryState.value = AiSummaryState()
     }
 }

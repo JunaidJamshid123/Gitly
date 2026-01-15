@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.gitly.SplashScreen
+import com.example.gitly.data.repository.GeminiRepository
 import com.example.gitly.presentation.ui.screens.repo_details.RepoDetailsScreen
 import com.example.gitly.presentation.ui.screens.statistics.RepoStatisticsScreen
 import com.example.gitly.presentation.ui.screens.statistics.UserStatisticsScreen
@@ -16,7 +17,10 @@ import com.example.gitly.presentation.ui.screens.user_detail.UserProfileDetailSc
  * Root navigation graph for the app.
  */
 @Composable
-fun AppNavGraph(navController: NavHostController) {
+fun AppNavGraph(
+    navController: NavHostController,
+    geminiRepository: GeminiRepository? = null
+) {
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH
@@ -45,7 +49,11 @@ fun AppNavGraph(navController: NavHostController) {
             )
         ) { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
-            UserProfileDetailScreen(navController = navController, username = username)
+            UserProfileDetailScreen(
+                navController = navController,
+                username = username,
+                geminiRepository = geminiRepository
+            )
         }
         
         // Repository Detail Screen
@@ -58,7 +66,12 @@ fun AppNavGraph(navController: NavHostController) {
         ) { backStackEntry ->
             val owner = backStackEntry.arguments?.getString("owner") ?: ""
             val repo = backStackEntry.arguments?.getString("repo") ?: ""
-            RepoDetailsScreen(owner = owner, repo = repo, navController = navController)
+            RepoDetailsScreen(
+                owner = owner,
+                repo = repo,
+                navController = navController,
+                geminiRepository = geminiRepository
+            )
         }
         
         // User Statistics Screen

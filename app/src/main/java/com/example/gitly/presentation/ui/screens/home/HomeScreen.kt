@@ -1,7 +1,12 @@
 package com.example.gitly.presentation.ui.screens.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -15,6 +20,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,10 +35,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
@@ -55,6 +64,8 @@ import com.example.gitly.presentation.navigation.BottomNavItem
 import com.example.gitly.presentation.navigation.Routes
 import com.example.gitly.presentation.ui.components.AnimatedLoadingScreen
 import com.example.gitly.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.min
 import java.text.NumberFormat
 import java.util.Locale
@@ -128,99 +139,71 @@ fun HomeScreen(navController: NavHostController) {
 
 @Composable
 fun HeroSection(userName: String) {
+    // Subtle entrance animation
+    var visible by remember { mutableStateOf(false) }
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(600),
+        label = "hero_alpha"
+    )
+    val animatedOffset by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = tween(600, easing = FastOutSlowInEasing),
+        label = "hero_offset"
+    )
+    
+    LaunchedEffect(Unit) { visible = true }
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = animatedAlpha
+                translationY = animatedOffset
+            },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, Color(0xFFF0F0F0))
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFF9FAFB),
-                            Color(0xFFFFFFFF)
-                        )
-                    )
-                )
+                .padding(24.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(28.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(
-                                androidx.compose.ui.graphics.Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF6366F1),
-                                        Color(0xFF8B5CF6)
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "👋",
-                            fontSize = 28.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "Welcome Back,",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF6B7280),
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = userName,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF111827),
-                            letterSpacing = (-0.5).sp
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color(0xFFEEF2FF),
-                                    Color(0xFFF5F3FF)
-                                )
-                            )
-                        )
-                        .padding(16.dp)
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFEEF2FF)),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Text(text = "👋", fontSize = 26.sp)
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
                     Text(
-                        text = "✨ Discover trending repos, top developers, and insights from the world of open source",
+                        text = "Welcome back,",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4F46E5),
-                        lineHeight = 20.sp,
-                        letterSpacing = 0.2.sp
+                        color = Color(0xFF9CA3AF)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = userName,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827)
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Discover trending repos, top developers & open source insights",
+                fontSize = 13.sp,
+                color = Color(0xFF6B7280),
+                lineHeight = 18.sp
+            )
         }
     }
 }
@@ -229,34 +212,31 @@ fun HeroSection(userName: String) {
 fun GitHubFunFactCard() {
     val facts = listOf(
         "GitHub has over 100 million developers worldwide",
-        "The most popular programming language on GitHub is JavaScript",
-        "Over 300 million pull requests are created annually",
-        "GitHub was founded in 2008 and acquired by Microsoft in 2018",
-        "The largest repository has over 1 million stars",
-        "Developers push over 1 billion commits to GitHub each year"
+        "JavaScript is the most popular language on GitHub",
+        "Over 300 million pull requests created annually",
+        "GitHub was founded in 2008",
+        "1 billion+ commits pushed to GitHub each year"
     )
     
     var currentFactIndex by remember { mutableStateOf(0) }
     var targetFactIndex by remember { mutableStateOf(0) }
     
-    // Auto-rotate facts every 10 seconds
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(10000) // 10 seconds
+            delay(8000)
             targetFactIndex = (targetFactIndex + 1) % facts.size
         }
     }
     
-    // Animate the transition
     val animatedProgress by animateFloatAsState(
         targetValue = if (currentFactIndex == targetFactIndex) 1f else 0f,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "fact_transition"
     )
     
     LaunchedEffect(targetFactIndex) {
         if (currentFactIndex != targetFactIndex) {
-            kotlinx.coroutines.delay(300)
+            delay(250)
             currentFactIndex = targetFactIndex
         }
     }
@@ -267,115 +247,104 @@ fun GitHubFunFactCard() {
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { _, dragAmount ->
                     if (dragAmount > 50) {
-                        // Swipe right - previous fact
                         targetFactIndex = if (targetFactIndex == 0) facts.size - 1 else targetFactIndex - 1
                     } else if (dragAmount < -50) {
-                        // Swipe left - next fact
                         targetFactIndex = (targetFactIndex + 1) % facts.size
                     }
                 }
             },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        border = BorderStroke(1.dp, Color(0xFFEEF2FF))
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFFEEF2FF),
-                            Color(0xFFE0E7FF)
-                        )
-                    )
-                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFEEF2FF))
+                    .graphicsLayer {
+                        scaleX = 0.9f + (animatedProgress * 0.1f)
+                        scaleY = 0.9f + (animatedProgress * 0.1f)
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(
-                            androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF6366F1),
-                                    Color(0xFF8B5CF6)
-                                )
+                Text(text = "💡", fontSize = 20.sp)
+            }
+            
+            Spacer(modifier = Modifier.width(14.dp))
+            
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .graphicsLayer {
+                        alpha = animatedProgress
+                    }
+            ) {
+                Text(
+                    text = "Did you know?",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF6366F1)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = facts[currentFactIndex],
+                    fontSize = 13.sp,
+                    color = Color(0xFF475569),
+                    lineHeight = 18.sp
+                )
+            }
+            
+            // Dot indicators
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                facts.forEachIndexed { index, _ ->
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (index == currentFactIndex) Color(0xFF6366F1)
+                                else Color(0xFFE2E8F0)
                             )
-                        )
-                        .graphicsLayer {
-                            rotationZ = (1f - animatedProgress) * 360f
-                            alpha = animatedProgress
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "💡",
-                        fontSize = 24.sp
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .graphicsLayer {
-                            alpha = animatedProgress
-                            translationX = (1f - animatedProgress) * 20f
-                        }
-                ) {
-                    Text(
-                        text = "Did you know?",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6366F1),
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = facts[currentFactIndex],
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4F46E5),
-                        lineHeight = 20.sp,
-                        letterSpacing = 0.1.sp
                     )
                 }
             }
         }
     }
-}@Composable
+}
+
+@Composable
 fun PopularLanguagesSection() {
     val staticLanguages = listOf(
-        LanguageData("JavaScript", 21.0f, "#F7DF1E"),
-        LanguageData("Java", 18.0f, "#B07219"),
-        LanguageData("Python", 15.5f, "#3776AB"),
-        LanguageData("TypeScript", 15.0f, "#3178C6"),
-        LanguageData("C++", 12.5f, "#F34B7D"),
-        LanguageData("Go", 7.0f, "#00ADD8"),
-        LanguageData("Kotlin", 5.0f, "#F18E33"),
-        LanguageData("Swift", 3.5f, "#FA7343"),
-        LanguageData("Rust", 2.5f, "#CE422B")
+        LanguageData("JavaScript", 21.0f, "#F7DF1E", "JS"),
+        LanguageData("Java", 18.0f, "#B07219", "Jv"),
+        LanguageData("Python", 15.5f, "#3776AB", "Py"),
+        LanguageData("TypeScript", 15.0f, "#3178C6", "TS"),
+        LanguageData("C++", 12.5f, "#F34B7D", "C+"),
+        LanguageData("Go", 7.0f, "#00ADD8", "Go"),
+        LanguageData("Kotlin", 5.0f, "#F18E33", "Kt"),
+        LanguageData("Swift", 3.5f, "#FA7343", "Sw"),
+        LanguageData("Rust", 2.5f, "#CE422B", "Rs")
     )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -383,77 +352,164 @@ fun PopularLanguagesSection() {
             ) {
                 Text(
                     text = "Popular Languages",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF111827),
-                    letterSpacing = (-0.3).sp
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF111827)
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFEEF2FF))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = "🔥 Trending",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6366F1)
-                    )
-                }
+                Text(
+                    text = "🔥",
+                    fontSize = 16.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Pie Chart
-            StaticLanguagePieChart(
-                languages = staticLanguages,
+            // Animated Bar Chart
+            AnimatedBarChart(
+                languages = staticLanguages.take(6),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(340.dp)
+                    .height(200.dp)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Legend
+            // Language Legend with Icons
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                staticLanguages.forEach { lang ->
+                staticLanguages.chunked(3).forEach { rowLanguages ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .clip(CircleShape)
-                                    .background(android.graphics.Color.parseColor(lang.color).let { Color(it) })
-                            )
-
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Text(
-                                text = lang.name,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF1F2937)
+                        rowLanguages.forEach { lang ->
+                            LanguageLegendItem(
+                                language = lang,
+                                modifier = Modifier.weight(1f)
                             )
                         }
-
-                        Text(
-                            text = "${lang.percentage}%",
-                            fontSize = 13.sp,
-                            color = Color(0xFF6B7280)
-                        )
+                        // Fill remaining space if row is incomplete
+                        repeat(3 - rowLanguages.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun LanguageLegendItem(
+    language: LanguageData,
+    modifier: Modifier = Modifier
+) {
+    val langColor = android.graphics.Color.parseColor(language.color).let { Color(it) }
+    
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(langColor.copy(alpha = 0.1f))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Language Icon Badge
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(langColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = language.icon,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (language.name == "JavaScript") Color.Black else Color.White
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+            Text(
+                text = language.name,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF374151),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${language.percentage}%",
+                fontSize = 10.sp,
+                color = Color(0xFF9CA3AF)
+            )
+        }
+    }
+}
+
+@Composable
+fun AnimatedBarChart(
+    languages: List<LanguageData>,
+    modifier: Modifier = Modifier
+) {
+    val maxPercentage = languages.maxOfOrNull { it.percentage } ?: 100f
+    val scope = rememberCoroutineScope()
+    
+    // Staggered animation for each bar
+    val animatedValues = remember {
+        languages.map { Animatable(0f) }
+    }
+    
+    LaunchedEffect(Unit) {
+        languages.forEachIndexed { index, lang ->
+            scope.launch {
+                delay(index * 80L)
+                animatedValues[index].animateTo(
+                    targetValue = lang.percentage / maxPercentage,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+            }
+        }
+    }
+    
+    Canvas(modifier = modifier) {
+        val barWidth = size.width / (languages.size * 2)
+        val spacing = barWidth
+        val maxBarHeight = size.height * 0.85f
+        
+        languages.forEachIndexed { index, lang ->
+            val color = android.graphics.Color.parseColor(lang.color).let { Color(it) }
+            val barHeight = maxBarHeight * animatedValues[index].value
+            val x = spacing / 2 + index * (barWidth + spacing)
+            val y = size.height - barHeight
+            
+            // Draw bar with rounded top
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight),
+                cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
+            )
+            
+            // Draw language label at bottom
+            drawContext.canvas.nativeCanvas.apply {
+                val textPaint = android.graphics.Paint().apply {
+                    textAlign = android.graphics.Paint.Align.CENTER
+                    textSize = 24f
+                    setColor(android.graphics.Color.parseColor("#6B7280"))
+                    isAntiAlias = true
+                }
+                drawText(
+                    lang.icon,
+                    x + barWidth / 2,
+                    size.height + 4f,
+                    textPaint
+                )
             }
         }
     }
@@ -462,263 +518,166 @@ fun PopularLanguagesSection() {
 data class LanguageData(
     val name: String,
     val percentage: Float,
-    val color: String
+    val color: String,
+    val icon: String = ""
 )
-
-@Composable
-fun StaticLanguagePieChart(
-    languages: List<LanguageData>,
-    modifier: Modifier = Modifier
-) {
-    // Animate the chart on first appearance
-    val animatedProgress by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
-        label = "chart_animation"
-    )
-    
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = 0.5f + (animatedProgress * 0.5f)
-                    scaleY = 0.5f + (animatedProgress * 0.5f)
-                    alpha = animatedProgress
-                }
-        ) {
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-            val radius = min(canvasWidth, canvasHeight) / 2.5f
-            val centerX = canvasWidth / 2f
-            val centerY = canvasHeight / 2f
-
-            var startAngle = -90f
-
-            languages.forEach { lang ->
-                val sweepAngle = (lang.percentage / 100f) * 360f * animatedProgress
-                val color = android.graphics.Color.parseColor(lang.color)
-
-                // Draw pie slice
-                drawArc(
-                    color = Color(color),
-                    startAngle = startAngle,
-                    sweepAngle = sweepAngle,
-                    useCenter = true,
-                    topLeft = Offset(centerX - radius, centerY - radius),
-                    size = Size(radius * 2, radius * 2)
-                )
-
-                // Draw label on each section (show for all sections >= 2.5%)
-                if (lang.percentage >= 2.5f && animatedProgress > 0.8f) {
-                    val middleAngle = startAngle + sweepAngle / 2
-                    val angleInRadians = Math.toRadians(middleAngle.toDouble())
-                    val labelRadius = radius * 0.7f
-
-                    val labelX = centerX + labelRadius * kotlin.math.cos(angleInRadians).toFloat()
-                    val labelY = centerY + labelRadius * kotlin.math.sin(angleInRadians).toFloat()
-
-                    // Draw percentage text
-                    drawContext.canvas.nativeCanvas.apply {
-                        val textPaint = android.graphics.Paint().apply {
-                            textAlign = android.graphics.Paint.Align.CENTER
-                            textSize = if (lang.percentage >= 10f) 32f else 26f
-                            setColor(android.graphics.Color.WHITE)
-                            isFakeBoldText = true
-                            setShadowLayer(4f, 0f, 2f, android.graphics.Color.argb(140, 0, 0, 0))
-                            alpha = ((animatedProgress - 0.8f) / 0.2f * 255).toInt().coerceIn(0, 255)
-                        }
-
-                        drawText(
-                            "${lang.percentage}%",
-                            labelX,
-                            labelY + 10f,
-                            textPaint
-                        )
-                    }
-                }
-
-                startAngle += sweepAngle
-            }
-
-            // Draw white center circle for donut effect
-            drawCircle(
-                color = Color.White,
-                radius = radius * 0.5f,
-                center = Offset(centerX, centerY)
-            )
-        }
-    }
-}
 
 @Composable
 fun TrendingReposSection(repos: List<GitHubRepo>, navController: NavHostController) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "🚀 Trending Repositories",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF111827),
-                    letterSpacing = (-0.3).sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Hot projects right now",
-                    fontSize = 13.sp,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 0.2.sp
-                )
-            }
+            Text(
+                text = "Trending Repos",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF111827)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "🚀", fontSize = 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(repos.take(7)) { repo ->
-                TrendingRepoCard(repo = repo, navController = navController)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            itemsIndexed(repos.take(6)) { index, repo ->
+                TrendingRepoCard(repo = repo, navController = navController, index = index)
             }
         }
     }
 }
 
 @Composable
-fun TrendingRepoCard(repo: GitHubRepo, navController: NavHostController) {
+fun TrendingRepoCard(repo: GitHubRepo, navController: NavHostController, index: Int = 0) {
+    // Staggered entrance animation
+    var visible by remember { mutableStateOf(false) }
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(400, delayMillis = index * 50),
+        label = "repo_alpha"
+    )
+    val animatedOffset by animateFloatAsState(
+        targetValue = if (visible) 0f else 30f,
+        animationSpec = tween(400, delayMillis = index * 50, easing = FastOutSlowInEasing),
+        label = "repo_offset"
+    )
+    
+    LaunchedEffect(Unit) { visible = true }
+    
     Card(
         modifier = Modifier
-            .width(290.dp)
-            .height(150.dp)
+            .width(260.dp)
+            .graphicsLayer {
+                alpha = animatedAlpha
+                translationX = animatedOffset
+            }
             .clickable {
-                navController.navigate(
-                    Routes.repoDetail(
-                        repo.owner.login,
-                        repo.name
-                    )
-                )
+                navController.navigate(Routes.repoDetail(repo.owner.login, repo.name))
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFAFAFA),
-                            Color(0xFFFFFFFF)
-                        )
-                    )
-                )
+                .fillMaxWidth()
+                .padding(14.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                // Owner and Repo Name
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(repo.owner.avatarUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Owner Avatar",
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF3F4F6)),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
+            // Owner and Repo Name
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(repo.owner.avatarUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Owner Avatar",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF3F4F6)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${repo.owner.login}/${repo.name}",
+                        text = repo.name,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6366F1),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = repo.owner.login,
+                        fontSize = 11.sp,
+                        color = Color(0xFF9CA3AF)
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-                // Description
-                Text(
-                    text = repo.description ?: "No description available",
-                    fontSize = 12.sp,
-                    color = Color(0xFF6B7280),
-                    lineHeight = 18.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+            // Description
+            Text(
+                text = repo.description ?: "No description available",
+                fontSize = 12.sp,
+                color = Color(0xFF6B7280),
+                lineHeight = 16.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                // Stats Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Language
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (repo.language != null) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(getLanguageColor(repo.language))
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = repo.language,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF374151)
-                            )
-                        }
-                    }
-
-                    // Stars
+            // Stats Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Language with icon
+                if (repo.language != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFEEF2FF))
+                            .background(getLanguageColor(repo.language).copy(alpha = 0.1f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Stars",
-                            tint = Color(0xFF6366F1),
-                            modifier = Modifier.size(14.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(getLanguageColor(repo.language))
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = formatNumber(repo.stargazersCount ?: 0),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4F46E5)
+                            text = repo.language,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF374151)
                         )
                     }
+                }
+
+                // Stars
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Stars",
+                        tint = Color(0xFFFBBF24),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = formatNumber(repo.stargazersCount ?: 0),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF374151)
+                    )
                 }
             }
         }
@@ -730,152 +689,119 @@ fun TrendingUsersSection(users: List<GitHubUser>, navController: NavHostControll
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "⭐ Top Developers",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF111827),
-                    letterSpacing = (-0.3).sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Community leaders to follow",
-                    fontSize = 13.sp,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 0.2.sp
-                )
-            }
+            Text(
+                text = "Top Developers",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF111827)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "⭐", fontSize = 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            users.take(3).forEach { user ->
-                TrendingUserCard(user = user, navController = navController)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            users.take(3).forEachIndexed { index, user ->
+                TrendingUserCard(user = user, navController = navController, index = index)
             }
         }
     }
 }
 
 @Composable
-fun TrendingUserCard(user: GitHubUser, navController: NavHostController) {
+fun TrendingUserCard(user: GitHubUser, navController: NavHostController, index: Int = 0) {
+    // Staggered entrance animation
+    var visible by remember { mutableStateOf(false) }
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(400, delayMillis = index * 80),
+        label = "user_alpha"
+    )
+    val animatedOffset by animateFloatAsState(
+        targetValue = if (visible) 0f else 20f,
+        animationSpec = tween(400, delayMillis = index * 80, easing = FastOutSlowInEasing),
+        label = "user_offset"
+    )
+    
+    LaunchedEffect(Unit) { visible = true }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                alpha = animatedAlpha
+                translationY = animatedOffset
+            }
             .clickable {
                 navController.navigate(Routes.userDetail(user.login))
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFFFAFAFA),
-                            Color(0xFFFFFFFF)
-                        )
-                    )
-                )
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(user.avatar_url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "User Avatar",
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF3F4F6)),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = user.name ?: user.login,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF111827),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "@${user.login}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF9CA3AF)
+                )
+            }
+
+            // Followers badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF3F4F6))
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(CircleShape)
-                        .background(
-                            androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFFEEF2FF),
-                                    Color(0xFFE0E7FF)
-                                )
-                            )
-                        )
-                        .padding(2.dp)
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(user.avatar_url)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "User Avatar",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = user.name ?: user.login,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        letterSpacing = 0.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "@${user.login}",
-                        fontSize = 13.sp,
-                        color = Color(0xFF6B7280),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF6366F1),
-                                    Color(0xFF8B5CF6)
-                                )
-                            )
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = formatNumber(user.followers ?: 0),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            letterSpacing = (-0.2).sp
-                        )
-                        Text(
-                            text = "followers",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFFE0E7FF),
-                            letterSpacing = 0.3.sp
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = Color(0xFF6B7280),
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = formatNumber(user.followers ?: 0),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF374151)
+                )
             }
         }
     }
@@ -886,97 +812,49 @@ fun ExploreByLanguageSection(navController: NavHostController) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Explore by Language",
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF111827),
-                letterSpacing = (-0.3).sp
+                color = Color(0xFF111827)
             )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "🔍", fontSize = 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Grid layout instead of horizontal scroll
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // First row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LanguageChip(
-                    language = "Kotlin",
-                    color = Color(0xFFA97BFF),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-                LanguageChip(
-                    language = "JavaScript",
-                    color = Color(0xFFF1E05A),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-                LanguageChip(
-                    language = "Python",
-                    color = Color(0xFF3572A5),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Second row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LanguageChip(
-                    language = "TypeScript",
-                    color = Color(0xFF2B7489),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-                LanguageChip(
-                    language = "Java",
-                    color = Color(0xFFB07219),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-                LanguageChip(
-                    language = "Go",
-                    color = Color(0xFF00ADD8),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Third row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LanguageChip(
-                    language = "Rust",
-                    color = Color(0xFFDEA584),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-                LanguageChip(
-                    language = "Swift",
-                    color = Color(0xFFFFAC45),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
-                LanguageChip(
-                    language = "C++",
-                    color = Color(0xFFF34B7D),
-                    navController = navController,
-                    modifier = Modifier.weight(1f)
-                )
+        // Language chips with icons - 3x3 grid
+        val languages = listOf(
+            Triple("Kotlin", Color(0xFFA97BFF), "Kt"),
+            Triple("JavaScript", Color(0xFFF1E05A), "JS"),
+            Triple("Python", Color(0xFF3572A5), "Py"),
+            Triple("TypeScript", Color(0xFF2B7489), "TS"),
+            Triple("Java", Color(0xFFB07219), "Jv"),
+            Triple("Go", Color(0xFF00ADD8), "Go"),
+            Triple("Rust", Color(0xFFDEA584), "Rs"),
+            Triple("Swift", Color(0xFFFFAC45), "Sw"),
+            Triple("C++", Color(0xFFF34B7D), "C+")
+        )
+        
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            languages.chunked(3).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    row.forEach { (lang, color, icon) ->
+                        LanguageChip(
+                            language = lang,
+                            color = color,
+                            icon = icon,
+                            navController = navController,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
     }
@@ -986,35 +864,48 @@ fun ExploreByLanguageSection(navController: NavHostController) {
 fun LanguageChip(
     language: String,
     color: Color,
+    icon: String,
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val isLightColor = language == "JavaScript"
+    
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable {
+            // Navigate to search with language filter
+        },
         shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
+            // Language icon badge
             Box(
                 modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(color),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = icon,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isLightColor) Color.Black else Color.White
+                )
+            }
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = language,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black,
+                color = Color(0xFF374151),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

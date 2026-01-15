@@ -32,6 +32,9 @@ android {
         
         // Add GitHub token from local.properties to BuildConfig
         buildConfigField("String", "GITHUB_TOKEN", "\"${localProperties.getProperty("GITHUB_TOKEN", "")}\"")
+        
+        // Add Gemini API key from local.properties to BuildConfig
+        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\"")
     }
 
     buildTypes {

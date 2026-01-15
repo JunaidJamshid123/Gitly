@@ -2,34 +2,47 @@ package com.example.gitly.presentation.ui.screens.repo_details
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.data.model.GitHubRepo
+import com.example.gitly.data.repository.GeminiRepository
 import com.example.gitly.presentation.navigation.Routes
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -41,32 +54,56 @@ fun RepoDetailsScreen(
     owner: String,
     repo: String,
     navController: NavHostController,
-    viewModel: RepoDetailsViewModel = viewModel()
+    viewModel: RepoDetailsViewModel = viewModel(),
+    geminiRepository: GeminiRepository? = null
 ) {
     val state by viewModel.state.collectAsState()
+    val aiSummaryState by viewModel.aiSummaryState.collectAsState()
     val context = LocalContext.current
+    
+    // Set GeminiRepository when available
+    LaunchedEffect(geminiRepository) {
+        geminiRepository?.let { viewModel.setGeminiRepository(it) }
+    }
 
     LaunchedEffect(owner, repo) {
         viewModel.loadRepositoryDetails(owner, repo)
+    }
+    
+    // AI Summary Dialog
+    if (aiSummaryState.showDialog) {
+        RepoAiSummaryDialog(
+            state = aiSummaryState,
+            repoName = "$owner/$repo",
+            onDismiss = { viewModel.dismissAiSummaryDialog() }
+        )
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "$owner/$repo",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Column {
+                        Text(
+                            text = repo,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = owner,
+                            fontSize = 12.sp,
+                            color = Color(0xFF9CA3AF)
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = Color(0xFF374151)
                         )
                     }
                 },
@@ -85,15 +122,15 @@ fun RepoDetailsScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Share,
+                            imageVector = Icons.Outlined.Share,
                             contentDescription = "Share",
-                            tint = Color.Black
+                            tint = Color(0xFF374151)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
-                    titleContentColor = Color.Black
+                    titleContentColor = Color(0xFF111827)
                 )
             )
         }
@@ -102,14 +139,27 @@ fun RepoDetailsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF5F5F5))
+                .background(Color(0xFFFAFAFA))
         ) {
             when {
                 state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF64B5F6)
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp),
+                            color = Color(0xFF6366F1),
+                            strokeWidth = 3.dp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Loading repository...",
+                            fontSize = 14.sp,
+                            color = Color(0xFF9CA3AF)
+                        )
+                    }
                 }
                 state.error != null -> {
                     Column(
@@ -120,16 +170,17 @@ fun RepoDetailsScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Star,
+                            imageVector = Icons.Outlined.ErrorOutline,
                             contentDescription = "Error",
-                            tint = Color.Red,
-                            modifier = Modifier.size(64.dp)
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(56.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = state.error ?: "Unknown error",
-                            color = Color.Red,
-                            fontSize = 16.sp
+                            color = Color(0xFFEF4444),
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -140,7 +191,9 @@ fun RepoDetailsScreen(
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                             context.startActivity(intent)
                         },
-                        navController = navController
+                        navController = navController,
+                        onGenerateAiSummary = { viewModel.generateAiSummary() },
+                        isAiLoading = aiSummaryState.isLoading
                     )
                 }
             }
@@ -152,25 +205,28 @@ fun RepoDetailsScreen(
 fun RepoDetailsContent(
     repository: GitHubRepo,
     onOpenBrowser: (String) -> Unit,
-    navController: NavHostController
+    navController: NavHostController,
+    onGenerateAiSummary: () -> Unit = {},
+    isAiLoading: Boolean = false
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Header Card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(18.dp)
                 ) {
                     // Owner Info
                     Row(
@@ -184,55 +240,74 @@ fun RepoDetailsContent(
                                 .build(),
                             contentDescription = "Owner Avatar",
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape),
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF3F4F6)),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = repository.name,
-                                fontSize = 20.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black
+                                color = Color(0xFF111827)
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = repository.owner.login,
-                                fontSize = 14.sp,
-                                color = Color.Gray
+                                text = "@${repository.owner.login}",
+                                fontSize = 13.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                        }
+                        // Visibility badge
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    if (repository.private) Color(0xFFFEE2E2) else Color(0xFFDCFCE7)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (repository.private) "Private" else "Public",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (repository.private) Color(0xFFDC2626) else Color(0xFF16A34A)
                             )
                         }
                     }
 
                     // Description
                     if (!repository.description.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = repository.description,
                             fontSize = 14.sp,
-                            color = Color.DarkGray,
+                            color = Color(0xFF6B7280),
                             lineHeight = 20.sp
                         )
                     }
 
                     // Topics
                     if (!repository.topics.isNullOrEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            repository.topics.take(10).forEach { topic ->
+                            repository.topics.take(8).forEach { topic ->
                                 Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = Color(0xFFE3F2FD)
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFF3F4F6)
                                 ) {
                                     Text(
                                         text = topic,
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF1976D2),
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF6366F1),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                                     )
                                 }
                             }
@@ -246,37 +321,37 @@ fun RepoDetailsContent(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // AI Insights Button
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable {
-                            // Navigate to AI Insights
-                            // You can implement this based on your AI screen
-                        },
+                        .clickable(enabled = !isAiLoading) { onGenerateAiSummary() },
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF64B5F6)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF6366F1)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "AI Insights",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (isAiLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(text = "✨", fontSize = 16.sp)
+                        }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "AI Insights",
-                            fontSize = 14.sp,
+                            text = if (isAiLoading) "Analyzing..." else "AI Insights",
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
                         )
@@ -291,26 +366,26 @@ fun RepoDetailsContent(
                             navController.navigate(Routes.repoStatistics(repository.owner.login, repository.name))
                         },
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF66BB6A)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF10B981)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Star,
+                            imageVector = Icons.Outlined.BarChart,
                             contentDescription = "Statistics",
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Statistics",
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
                         )
@@ -323,39 +398,40 @@ fun RepoDetailsContent(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(18.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatItem(
                         icon = Icons.Default.Star,
                         label = "Stars",
                         count = repository.stargazersCount ?: 0,
-                        color = Color(0xFFFFA726)
+                        color = Color(0xFFFBBF24)
                     )
                     StatItem(
-                        icon = Icons.Default.Star,
+                        icon = Icons.Outlined.AccountTree,
                         label = "Forks",
                         count = repository.forksCount ?: 0,
-                        color = Color(0xFF66BB6A)
+                        color = Color(0xFF10B981)
                     )
                     StatItem(
-                        icon = Icons.Default.Star,
+                        icon = Icons.Outlined.Visibility,
                         label = "Watchers",
                         count = repository.watchersCount ?: 0,
-                        color = Color(0xFF42A5F5)
+                        color = Color(0xFF3B82F6)
                     )
                     StatItem(
-                        icon = Icons.Default.Star,
+                        icon = Icons.Outlined.BugReport,
                         label = "Issues",
                         count = repository.openIssuesCount ?: 0,
-                        color = Color(0xFFEF5350)
+                        color = Color(0xFFEF4444)
                     )
                 }
             }
@@ -365,60 +441,58 @@ fun RepoDetailsContent(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    Text(
+                        text = "Repository Info",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111827)
+                    )
                     
                     if (repository.language != null) {
                         InfoRow(
-                            icon = Icons.Default.Star,
+                            icon = Icons.Outlined.Code,
                             label = "Language",
                             value = repository.language,
                             color = getLanguageColor(repository.language)
                         )
                     }
                     
-                    if (repository.visibility != null) {
-                        InfoRow(
-                            icon = if (repository.private) Icons.Default.Lock else Icons.Default.Star,
-                            label = "Visibility",
-                            value = repository.visibility.capitalize(Locale.ROOT),
-                            color = if (repository.private) Color(0xFFEF5350) else Color(0xFF66BB6A)
-                        )
-                    }
-                    
                     if (repository.createdAt != null) {
                         InfoRow(
-                            icon = Icons.Default.Star,
+                            icon = Icons.Outlined.CalendarMonth,
                             label = "Created",
                             value = formatDate(repository.createdAt),
-                            color = Color(0xFF42A5F5)
+                            color = Color(0xFF3B82F6)
                         )
                     }
                     
                     if (repository.updatedAt != null) {
                         InfoRow(
-                            icon = Icons.Default.Star,
+                            icon = Icons.Outlined.Update,
                             label = "Updated",
                             value = formatDate(repository.updatedAt),
-                            color = Color(0xFF9C27B0)
+                            color = Color(0xFF8B5CF6)
                         )
                     }
                     
                     repository.fork?.let { isFork ->
                         if (isFork) {
                             InfoRow(
-                                icon = Icons.Default.Star,
+                                icon = Icons.Outlined.CallSplit,
                                 label = "Type",
                                 value = "Forked Repository",
-                                color = Color(0xFFFF9800)
+                                color = Color(0xFFF59E0B)
                             )
                         }
                     }
@@ -426,10 +500,10 @@ fun RepoDetailsContent(
                     repository.archived?.let { isArchived ->
                         if (isArchived) {
                             InfoRow(
-                                icon = Icons.Default.Star,
+                                icon = Icons.Outlined.Archive,
                                 label = "Status",
                                 value = "Archived",
-                                color = Color(0xFF757575)
+                                color = Color(0xFF6B7280)
                             )
                         }
                     }
@@ -441,22 +515,22 @@ fun RepoDetailsContent(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 ActionButton(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Star,
-                    label = "GitHub",
-                    color = Color(0xFF9C27B0),
+                    icon = Icons.Outlined.OpenInNew,
+                    label = "Open on GitHub",
+                    color = Color(0xFF374151),
                     onClick = { onOpenBrowser(repository.htmlUrl) }
                 )
                 
                 if (!repository.homepage.isNullOrBlank()) {
                     ActionButton(
                         modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Home,
+                        icon = Icons.Outlined.Language,
                         label = "Homepage",
-                        color = Color(0xFFFF9800),
+                        color = Color(0xFFF59E0B),
                         onClick = { onOpenBrowser(repository.homepage) }
                     )
                 }
@@ -475,23 +549,31 @@ fun StatItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = color,
-            modifier = Modifier.size(28.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(color.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(20.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = formatNumber(count),
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = Color(0xFF111827)
         )
         Text(
             text = label,
-            fontSize = 12.sp,
-            color = Color.Gray
+            fontSize = 11.sp,
+            color = Color(0xFF9CA3AF)
         )
     }
 }
@@ -507,24 +589,33 @@ fun InfoRow(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = color,
-            modifier = Modifier.size(20.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(color.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
                 text = label,
-                fontSize = 12.sp,
-                color = Color.Gray
+                fontSize = 11.sp,
+                color = Color(0xFF9CA3AF)
             )
+            Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = value,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black
+                color = Color(0xFF374151)
             )
         }
     }
@@ -535,7 +626,7 @@ fun ActionButton(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
-    color: Color = Color(0xFF64B5F6),
+    color: Color = Color(0xFF6366F1),
     onClick: () -> Unit
 ) {
     Surface(
@@ -547,7 +638,7 @@ fun ActionButton(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -555,12 +646,12 @@ fun ActionButton(
                 imageVector = icon,
                 contentDescription = label,
                 tint = Color.White,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(16.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = label,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White
             )
@@ -669,4 +760,171 @@ private fun Layout(
         modifier = modifier,
         measurePolicy = measurePolicy
     )
+}
+
+@Composable
+fun RepoAiSummaryDialog(
+    state: RepoAiSummaryState,
+    repoName: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .fillMaxHeight(0.8f),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF9FAFB))
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFFEEF2FF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "✨", fontSize = 20.sp)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "AI Insights",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF111827)
+                            )
+                            Text(
+                                text = repoName,
+                                fontSize = 12.sp,
+                                color = Color(0xFF9CA3AF),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF3F4F6))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color(0xFF6B7280),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                
+                Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+                
+                // Content
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp)
+                ) {
+                    when {
+                        state.isLoading -> {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = Color(0xFF6366F1),
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = "Analyzing repository...",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF374151)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Gitly AI is generating insights",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF9CA3AF)
+                                )
+                            }
+                        }
+                        state.error != null -> {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFFEE2E2)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.ErrorOutline,
+                                        contentDescription = null,
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Something went wrong",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFEF4444)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = state.error,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                        state.summary != null -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Text(
+                                    text = state.summary,
+                                    fontSize = 14.sp,
+                                    lineHeight = 22.sp,
+                                    color = Color(0xFF374151)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

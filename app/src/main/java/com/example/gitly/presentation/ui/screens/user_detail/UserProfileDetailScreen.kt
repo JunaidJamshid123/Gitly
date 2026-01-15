@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,12 +28,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.gitly.R
 import com.example.gitly.data.model.GitHubUser
+import com.example.gitly.data.repository.GeminiRepository
 import com.example.gitly.presentation.navigation.Routes
 import com.example.gitly.presentation.ui.components.AnimatedLoadingScreen
 
@@ -40,14 +44,21 @@ import com.example.gitly.presentation.ui.components.AnimatedLoadingScreen
 @Composable
 fun UserProfileDetailScreen(
     navController: NavHostController,
-    username: String
+    username: String,
+    geminiRepository: GeminiRepository? = null
 ) {
     val viewModel: UserDetailViewModel = viewModel()
     val userDetailState by viewModel.userDetailState.collectAsState()
     val userReposState by viewModel.userReposState.collectAsState()
     val contributionState by viewModel.contributionState.collectAsState()
+    val aiSummaryState by viewModel.aiSummaryState.collectAsState()
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    
+    // Set GeminiRepository when available
+    LaunchedEffect(geminiRepository) {
+        geminiRepository?.let { viewModel.setGeminiRepository(it) }
+    }
 
     // Fetch user details when screen loads
     LaunchedEffect(username) {
@@ -57,6 +68,14 @@ fun UserProfileDetailScreen(
     // Observe the userDetailState
     LaunchedEffect(userDetailState) {
         isLoading = userDetailState == null
+    }
+    
+    // AI Summary Dialog
+    if (aiSummaryState.showDialog) {
+        AiSummaryDialog(
+            state = aiSummaryState,
+            onDismiss = { viewModel.dismissAiSummaryDialog() }
+        )
     }
 
     Surface(
@@ -137,7 +156,10 @@ fun UserProfileDetailScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 
                                 // Generate AI Summary Button
-                                GenerateAISummaryButton()
+                                GenerateAISummaryButton(
+                                    onClick = { viewModel.generateAiSummary() },
+                                    isLoading = aiSummaryState.isLoading
+                                )
                                 
                                 Spacer(modifier = Modifier.height(8.dp))
                                 
@@ -204,38 +226,18 @@ fun ProfileHeader(user: GitHubUser) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 40.dp), // Extra top padding for floating back button
+            .padding(top = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Profile Picture with gradient border
-        Box(
-            contentAlignment = Alignment.Center
-        ) {
-            // Gradient ring effect
+        // Profile Picture with clean border
+        Box(contentAlignment = Alignment.Center) {
             Box(
                 modifier = Modifier
-                    .size(110.dp)
+                    .size(100.dp)
                     .clip(CircleShape)
-                    .background(
-                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF64B5F6),
-                                Color(0xFF42A5F5),
-                                Color(0xFF1E88E5)
-                            )
-                        )
-                    )
+                    .background(Color(0xFFE5E7EB))
             )
             
-            // White ring
-            Box(
-                modifier = Modifier
-                    .size(104.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-            )
-            
-            // Profile image
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(user.avatar_url)
@@ -251,40 +253,38 @@ fun ProfileHeader(user: GitHubUser) {
             )
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
         
-        // Name
         Text(
             text = user.name ?: user.login,
-            fontSize = 24.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = Color(0xFF111827)
         )
         
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         
-        // Username with @ symbol
         Text(
             text = "@${user.login}",
-            fontSize = 15.sp,
-            color = Color(0xFF64B5F6),
+            fontSize = 14.sp,
+            color = Color(0xFF6366F1),
             fontWeight = FontWeight.Medium
         )
         
         Spacer(modifier = Modifier.height(10.dp))
         
-        // Type badge (User/Organization)
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = Color(0xFFE3F2FD),
-            border = BorderStroke(1.dp, Color(0xFF64B5F6).copy(alpha = 0.3f))
+        // Type badge
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFFF3F4F6))
+                .padding(horizontal = 12.dp, vertical = 5.dp)
         ) {
             Text(
                 text = user.type ?: "User",
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF1976D2),
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                color = Color(0xFF6B7280)
             )
         }
     }
@@ -308,85 +308,78 @@ fun BioSection(user: GitHubUser) {
 
 @Composable
 fun StatsSection(user: GitHubUser) {
-    Surface(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF8F9FA),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = 18.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // Followers
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = formatNumber(user.followers ?: 0),
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color(0xFF111827)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Followers",
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    fontSize = 11.sp,
+                    color = Color(0xFF9CA3AF)
                 )
             }
             
-            // Divider
             Box(
                 modifier = Modifier
                     .width(1.dp)
-                    .height(40.dp)
-                    .background(Color(0xFFE0E0E0))
+                    .height(36.dp)
+                    .background(Color(0xFFE5E7EB))
             )
             
             // Following
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = formatNumber(user.following ?: 0),
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color(0xFF111827)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Following",
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    fontSize = 11.sp,
+                    color = Color(0xFF9CA3AF)
                 )
             }
             
-            // Divider
             Box(
                 modifier = Modifier
                     .width(1.dp)
-                    .height(40.dp)
-                    .background(Color(0xFFE0E0E0))
+                    .height(36.dp)
+                    .background(Color(0xFFE5E7EB))
             )
             
             // Repos
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = formatNumber(user.public_repos ?: 0),
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color(0xFF111827)
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Repos",
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    fontSize = 11.sp,
+                    color = Color(0xFF9CA3AF)
                 )
             }
         }
@@ -394,35 +387,43 @@ fun StatsSection(user: GitHubUser) {
 }
 
 @Composable
-fun GenerateAISummaryButton() {
+fun GenerateAISummaryButton(
+    onClick: () -> Unit,
+    isLoading: Boolean = false
+) {
     Button(
-        onClick = { /* Handle AI summary generation */ },
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        enabled = !isLoading,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF64B5F6),
-            contentColor = Color.White
+            containerColor = Color(0xFF6366F1),
+            contentColor = Color.White,
+            disabledContainerColor = Color(0xFF6366F1).copy(alpha = 0.6f),
+            disabledContentColor = Color.White.copy(alpha = 0.8f)
         ),
         shape = RoundedCornerShape(12.dp),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 2.dp
-        )
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.padding(vertical = 4.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = "AI",
-                modifier = Modifier.size(20.dp)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(text = "✨", fontSize = 16.sp)
+            }
             
             Spacer(modifier = Modifier.width(8.dp))
             
             Text(
-                text = "Generate AI Insights Summary",
-                fontSize = 15.sp,
+                text = if (isLoading) "Generating..." else "Generate AI Insights",
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -435,26 +436,28 @@ fun ViewStatisticsButton(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = Color.Black
+            contentColor = Color(0xFF374151)
         ),
         shape = RoundedCornerShape(12.dp),
-        border = ButtonDefaults.outlinedButtonBorder
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.padding(vertical = 4.dp)
         ) {
-            Text(
-                text = "📊",
-                fontSize = 20.sp
+            Icon(
+                imageVector = Icons.Outlined.BarChart,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = Color(0xFF374151)
             )
             
             Spacer(modifier = Modifier.width(8.dp))
             
             Text(
                 text = "View Statistics",
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -465,12 +468,12 @@ fun ViewStatisticsButton(onClick: () -> Unit) {
 fun AdditionalInfoSection(user: GitHubUser) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // Company
         if (user.company != null) {
             InfoRow(
-                icon = Icons.Default.Star,
+                icon = Icons.Outlined.Business,
                 text = user.company
             )
         }
@@ -478,7 +481,7 @@ fun AdditionalInfoSection(user: GitHubUser) {
         // Location
         if (user.location != null) {
             InfoRow(
-                icon = Icons.Default.LocationOn,
+                icon = Icons.Outlined.LocationOn,
                 text = user.location
             )
         }
@@ -486,7 +489,7 @@ fun AdditionalInfoSection(user: GitHubUser) {
         // Email
         if (user.email != null) {
             InfoRow(
-                icon = Icons.Default.Email,
+                icon = Icons.Outlined.Email,
                 text = user.email
             )
         }
@@ -494,7 +497,7 @@ fun AdditionalInfoSection(user: GitHubUser) {
         // Blog/Website
         if (user.blog != null && user.blog.isNotEmpty()) {
             InfoRow(
-                icon = Icons.Default.Star,
+                icon = Icons.Outlined.Link,
                 text = user.blog,
                 isLink = true
             )
@@ -503,8 +506,8 @@ fun AdditionalInfoSection(user: GitHubUser) {
         // Twitter
         if (user.twitter_username != null) {
             InfoRow(
-                icon = Icons.Default.Star,
-                text = "twitter.com/${user.twitter_username}",
+                icon = Icons.Outlined.AlternateEmail,
+                text = "@${user.twitter_username}",
                 isLink = true
             )
         }
@@ -521,19 +524,27 @@ fun InfoRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = Color.Gray
-        )
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFFF3F4F6)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = Color(0xFF6B7280)
+            )
+        }
         
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
         
         Text(
             text = text,
-            fontSize = 14.sp,
-            color = if (isLink) Color(0xFF64B5F6) else Color.Black,
+            fontSize = 13.sp,
+            color = if (isLink) Color(0xFF6366F1) else Color(0xFF374151),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -673,54 +684,66 @@ fun RepositoryCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF64B5F6),
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Folder,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFF9CA3AF)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = name,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF6366F1),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF5F5F5)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(
+                            if (isPublic) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = if (isPublic) "Public" else "Private",
-                        fontSize = 11.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isPublic) Color(0xFF16A34A) else Color(0xFFDC2626)
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 // Language indicator
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
+                        .size(10.dp)
                         .clip(CircleShape)
                         .background(languageColor)
                 )
@@ -730,17 +753,16 @@ fun RepositoryCard(
                 Text(
                     text = language,
                     fontSize = 12.sp,
-                    color = Color.Black
+                    color = Color(0xFF6B7280)
                 )
                 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(14.dp))
                 
-                // Stars
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "Stars",
                     modifier = Modifier.size(14.dp),
-                    tint = Color.Gray
+                    tint = Color(0xFFFBBF24)
                 )
                 
                 Spacer(modifier = Modifier.width(4.dp))
@@ -748,7 +770,7 @@ fun RepositoryCard(
                 Text(
                     text = stars.toString(),
                     fontSize = 12.sp,
-                    color = Color.Black
+                    color = Color(0xFF6B7280)
                 )
             }
         }
@@ -984,6 +1006,170 @@ fun ContributionGraph(contributionState: ContributionState) {
                         color = Color(0xFF656D76)
                     )
                     //..
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AiSummaryDialog(
+    state: AiSummaryState,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .fillMaxHeight(0.8f),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF9FAFB))
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFFEEF2FF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "✨", fontSize = 20.sp)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "AI Insights",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF111827)
+                            )
+                            Text(
+                                text = "Powered by Gitly AI",
+                                fontSize = 11.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF3F4F6))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color(0xFF6B7280),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                
+                Divider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+                
+                // Content
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp)
+                ) {
+                    when {
+                        state.isLoading -> {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = Color(0xFF6366F1),
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = "Analyzing profile...",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF374151)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Gitly AI is generating insights",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF9CA3AF)
+                                )
+                            }
+                        }
+                        state.error != null -> {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFFEE2E2)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.ErrorOutline,
+                                        contentDescription = null,
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Something went wrong",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFEF4444)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = state.error,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                        state.summary != null -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Text(
+                                    text = state.summary,
+                                    fontSize = 14.sp,
+                                    lineHeight = 22.sp,
+                                    color = Color(0xFF374151)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

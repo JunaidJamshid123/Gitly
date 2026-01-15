@@ -1,5 +1,7 @@
 package com.example.gitly.presentation.ui.screens.statistics
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -9,7 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +41,9 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+private val IndigoColor = Color(0xFF6366F1)
+private val BorderColor = Color(0xFFE5E7EB)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserStatisticsScreen(navController: NavHostController, username: String) {
@@ -51,10 +57,16 @@ fun UserStatisticsScreen(navController: NavHostController, username: String) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistics", fontSize = 18.sp, fontWeight = FontWeight.Medium) },
+                title = { 
+                    Text(
+                        "📊 User Statistics", 
+                        fontSize = 18.sp, 
+                        fontWeight = FontWeight.SemiBold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(Icons.Outlined.ArrowBack, "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -73,7 +85,7 @@ fun UserStatisticsScreen(navController: NavHostController, username: String) {
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color.Black)
+                    CircularProgressIndicator(color = IndigoColor)
                 }
             }
             is UserStatsState.Success -> {
@@ -89,7 +101,16 @@ fun UserStatisticsScreen(navController: NavHostController, username: String) {
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(state.message, color = Color.Red)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Outlined.ErrorOutline,
+                            contentDescription = null,
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(state.message, color = Color(0xFFEF4444), fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -101,82 +122,125 @@ fun UserStatisticsContent(
     statistics: com.example.gitly.data.model.UserStatistics,
     modifier: Modifier = Modifier
 ) {
+    // Animation state for staggered entrance
+    var animationPlayed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { animationPlayed = true }
+    
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (animationPlayed) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
+        label = "content_animation"
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF9FAFB))
+            .background(Color(0xFFF8FAFC))
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         // User Header Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            border = BorderStroke(1.dp, BorderColor)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = statistics.avatarUrl,
-                    contentDescription = "Avatar",
+                Box(
                     modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(IndigoColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = statistics.avatarUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .size(68.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
                 Column {
                     Text(
                         text = statistics.name ?: statistics.username,
-                        fontSize = 18.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = Color(0xFF1F2937)
                     )
                     Text(
                         text = "@${statistics.username}",
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = IndigoColor,
+                        fontWeight = FontWeight.Medium
                     )
-                    Text(
-                        text = "On GitHub for ${statistics.accountAge}",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.AccessTime,
+                            contentDescription = null,
+                            tint = Color(0xFF6B7280),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "On GitHub for ${statistics.accountAge}",
+                            fontSize = 12.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Overview Stats
-        Text(
-            text = "Overview",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        // Overview Stats Section
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 12.dp)
+        ) {
+            Text(text = "📈", fontSize = 18.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Overview",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1F2937)
+            )
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatCard(
+            UserStatCard(
                 title = "Repositories",
                 value = statistics.totalRepos.toString(),
+                icon = Icons.Outlined.Folder,
+                iconColor = IndigoColor,
+                animatedProgress = animatedProgress,
                 modifier = Modifier.weight(1f)
             )
-            StatCard(
+            UserStatCard(
                 title = "Total Stars",
                 value = formatNumber(statistics.totalStars),
+                icon = Icons.Outlined.StarOutline,
+                iconColor = Color(0xFFF59E0B),
+                animatedProgress = animatedProgress,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -187,43 +251,57 @@ fun UserStatisticsContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatCard(
+            UserStatCard(
                 title = "Followers",
                 value = formatNumber(statistics.followers),
+                icon = Icons.Outlined.People,
+                iconColor = Color(0xFF10B981),
+                animatedProgress = animatedProgress,
                 modifier = Modifier.weight(1f)
             )
-            StatCard(
+            UserStatCard(
                 title = "Following",
                 value = formatNumber(statistics.following),
+                icon = Icons.Outlined.PersonAdd,
+                iconColor = Color(0xFF8B5CF6),
+                animatedProgress = animatedProgress,
                 modifier = Modifier.weight(1f)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Language Statistics
         if (statistics.languageStats.isNotEmpty()) {
-            Text(
-                text = "Languages",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Text(text = "💻", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Languages Used",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, BorderColor)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Language Distribution Bar Chart
-                    PieChartWithLabels(
+                    AnimatedPieChartWithLabels(
                         data = statistics.languageStats,
+                        animatedProgress = animatedProgress,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 16.dp)
@@ -231,34 +309,50 @@ fun UserStatisticsContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
         }
 
         // Top Repositories
         if (statistics.topRepositories.isNotEmpty()) {
-            Text(
-                text = "Top Repositories",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Text(text = "🏆", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Top Repositories",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            }
 
-            statistics.topRepositories.forEach { repo ->
-                TopRepoCard(repo = repo)
-                Spacer(modifier = Modifier.height(8.dp))
+            statistics.topRepositories.forEachIndexed { index, repo ->
+                TopRepoCard(repo = repo, rank = index + 1)
+                Spacer(modifier = Modifier.height(10.dp))
             }
         }
+        
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
+fun UserStatCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    iconColor: Color,
+    animatedProgress: Float,
+    modifier: Modifier = Modifier
+) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, BorderColor)
     ) {
         Column(
             modifier = Modifier
@@ -266,24 +360,46 @@ fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(iconColor.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = value,
-                fontSize = 24.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = Color(0xFF1F2937)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
                 fontSize = 12.sp,
-                color = Color.Gray
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF6B7280)
             )
         }
     }
 }
 
 @Composable
-fun LanguageStatRow(language: String, count: Int, total: Int) {
+fun LanguageStatRow(language: String, count: Int, total: Int, animatedProgress: Float) {
+    val animatedWidth by animateFloatAsState(
+        targetValue = (count.toFloat() / total.toFloat()) * animatedProgress,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 100f),
+        label = "language_progress"
+    )
+    
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -293,67 +409,104 @@ fun LanguageStatRow(language: String, count: Int, total: Int) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
+                        .size(14.dp)
                         .clip(CircleShape)
                         .background(getLanguageColor(language))
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = language,
                     fontSize = 14.sp,
-                    color = Color.Black,
+                    color = Color(0xFF1F2937),
                     fontWeight = FontWeight.Medium
                 )
             }
             Text(
                 text = "$count repos",
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = Color(0xFF6B7280),
+                fontWeight = FontWeight.Medium
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        LinearProgressIndicator(
-            progress = { count.toFloat() / total.toFloat() },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            color = getLanguageColor(language),
-            trackColor = Color(0xFFE5E7EB)
-        )
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(BorderColor)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(animatedWidth)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(getLanguageColor(language))
+            )
+        }
     }
 }
 
 @Composable
-fun TopRepoCard(repo: com.example.gitly.data.model.TopRepository) {
+fun TopRepoCard(repo: com.example.gitly.data.model.TopRepository, rank: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, BorderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Rank Badge
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        when (rank) {
+                            1 -> Color(0xFFF59E0B).copy(alpha = 0.15f)
+                            2 -> Color(0xFF6B7280).copy(alpha = 0.15f)
+                            3 -> Color(0xFFF97316).copy(alpha = 0.15f)
+                            else -> IndigoColor.copy(alpha = 0.1f)
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when (rank) {
+                        1 -> "🥇"
+                        2 -> "🥈"
+                        3 -> "🥉"
+                        else -> "#$rank"
+                    },
+                    fontSize = if (rank <= 3) 16.sp else 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = IndigoColor
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = repo.name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF1F2937)
                 )
                 if (repo.language != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 6.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(10.dp)
                                 .clip(CircleShape)
                                 .background(getLanguageColor(repo.language))
                         )
@@ -361,24 +514,46 @@ fun TopRepoCard(repo: com.example.gitly.data.model.TopRepository) {
                         Text(
                             text = repo.language,
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = Color(0xFF6B7280)
                         )
                     }
                 }
             }
             
-            Row {
-                Text(
-                    text = "⭐ ${formatNumber(repo.stars)}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "🔀 ${formatNumber(repo.forks)}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.StarOutline,
+                        contentDescription = null,
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatNumber(repo.stars),
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.AccountTree,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatNumber(repo.forks),
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
@@ -420,8 +595,9 @@ fun formatNumber(number: Int): String {
 
 
 @Composable
-fun PieChartWithLabels(
+fun AnimatedPieChartWithLabels(
     data: Map<String, Int>,
+    animatedProgress: Float,
     modifier: Modifier = Modifier
 ) {
     val sortedData = remember(data) {
@@ -436,6 +612,13 @@ fun PieChartWithLabels(
     
     var hoveredLanguage by remember { mutableStateOf<String?>(null) }
     
+    // Animate the sweep
+    val animatedSweep by animateFloatAsState(
+        targetValue = 360f * animatedProgress,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 100f),
+        label = "pie_sweep"
+    )
+    
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -444,7 +627,7 @@ fun PieChartWithLabels(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(280.dp)
+                .height(260.dp)
         ) {
             Canvas(
                 modifier = Modifier
@@ -486,93 +669,36 @@ fun PieChartWithLabels(
             ) {
                 val canvasSize = min(size.width, size.height)
                 val radius = canvasSize / 2.8f
-                val strokeWidth = radius * 0.45f  // Thicker segments for better visibility
+                val strokeWidth = radius * 0.5f  // Thicker segments for better visibility
                 val centerOffset = Offset(size.width / 2f, size.height / 2f)
                 
                 var startAngle = -90f
+                var drawnAngle = 0f
                 
                 sortedData.forEach { (language, count) ->
                     val sweepAngle = (count / total) * 360f
-                    val percentage = (count / total) * 100f
                     val color = getLanguageColor(language)
                     
-                    // Draw donut segment
-                    drawArc(
-                        color = color,
-                        startAngle = startAngle,
-                        sweepAngle = sweepAngle,
-                        useCenter = false,
-                        topLeft = Offset(
-                            centerOffset.x - radius,
-                            centerOffset.y - radius
-                        ),
-                        size = Size(radius * 2, radius * 2),
-                        style = Stroke(width = strokeWidth)
-                    )
-                    
-                    // Calculate label position outside the chart
-                    val middleAngle = startAngle + sweepAngle / 2
-                    val angleInRadians = Math.toRadians(middleAngle.toDouble())
-                    val labelRadius = radius + strokeWidth / 2 + 60f  // Moved further out
-                    
-                    val labelX = centerOffset.x + labelRadius * cos(angleInRadians).toFloat()
-                    val labelY = centerOffset.y + labelRadius * sin(angleInRadians).toFloat()
-                    
-                    // Calculate connection point on the arc
-                    val arcRadius = radius - strokeWidth / 2
-                    val arcX = centerOffset.x + arcRadius * cos(angleInRadians).toFloat()
-                    val arcY = centerOffset.y + arcRadius * sin(angleInRadians).toFloat()
-                    
-                    // Draw connecting line for all segments
-                    drawLine(
-                        color = Color.Gray.copy(alpha = 0.6f),
-                        start = Offset(arcX, arcY),
-                        end = Offset(labelX, labelY),
-                        strokeWidth = 2f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 4f))
-                    )
-                    
-                    // Draw percentage text with background for better visibility
-                    drawContext.canvas.nativeCanvas.apply {
-                        val text = String.format("%.1f%%", percentage)
+                    // Only draw if we haven't exceeded the animated sweep
+                    if (drawnAngle < animatedSweep) {
+                        val actualSweep = minOf(sweepAngle, animatedSweep - drawnAngle)
                         
-                        // Background paint
-                        val bgPaint = android.graphics.Paint().apply {
-                            setColor(android.graphics.Color.argb(230, 255, 255, 255))
-                            style = android.graphics.Paint.Style.FILL
-                        }
-                        
-                        // Text paint
-                        val textPaint = android.graphics.Paint().apply {
-                            textAlign = android.graphics.Paint.Align.CENTER
-                            textSize = 30f  // Larger text
-                            setColor(android.graphics.Color.BLACK)
-                            isFakeBoldText = true
-                        }
-                        
-                        val textBounds = android.graphics.Rect()
-                        textPaint.getTextBounds(text, 0, text.length, textBounds)
-                        
-                        // Draw rounded background
-                        drawRoundRect(
-                            labelX - textBounds.width() / 2 - 10f,
-                            labelY - textBounds.height() / 2 - 8f,
-                            labelX + textBounds.width() / 2 + 10f,
-                            labelY + textBounds.height() / 2 + 8f,
-                            12f,
-                            12f,
-                            bgPaint
-                        )
-                        
-                        // Draw text
-                        drawText(
-                            text,
-                            labelX,
-                            labelY + textBounds.height() / 2,
-                            textPaint
+                        // Draw donut segment
+                        drawArc(
+                            color = color,
+                            startAngle = startAngle,
+                            sweepAngle = actualSweep,
+                            useCenter = false,
+                            topLeft = Offset(
+                                centerOffset.x - radius,
+                                centerOffset.y - radius
+                            ),
+                            size = Size(radius * 2, radius * 2),
+                            style = Stroke(width = strokeWidth)
                         )
                     }
                     
+                    drawnAngle += sweepAngle
                     startAngle += sweepAngle
                 }
                 
@@ -581,6 +707,24 @@ fun PieChartWithLabels(
                     color = Color.White,
                     radius = radius - strokeWidth,
                     center = centerOffset
+                )
+            }
+            
+            // Center text showing total
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = sortedData.size.toString(),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+                Text(
+                    text = "Languages",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6B7280)
                 )
             }
             
@@ -593,18 +737,19 @@ fun PieChartWithLabels(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(8.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xF0FFFFFF),
-                    shadowElevation = 4.dp
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White,
+                    shadowElevation = 8.dp,
+                    border = BorderStroke(1.dp, BorderColor)
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(12.dp)
+                                    .size(14.dp)
                                     .clip(CircleShape)
                                     .background(getLanguageColor(language))
                             )
@@ -613,26 +758,26 @@ fun PieChartWithLabels(
                                 text = language,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black
+                                color = Color(0xFF1F2937)
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "$count repos (${String.format("%.1f%%", percentage)})",
                             fontSize = 14.sp,
-                            color = Color.Gray
+                            color = Color(0xFF6B7280)
                         )
                     }
                 }
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         
         // Legend below the chart
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             sortedData.forEach { (language, count) ->
                 val percentage = (count / total) * 100f
@@ -648,15 +793,15 @@ fun PieChartWithLabels(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
+                                .size(18.dp)
+                                .clip(RoundedCornerShape(4.dp))
                                 .background(getLanguageColor(language))
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = language,
                             fontSize = 14.sp,
-                            color = Color.Black,
+                            color = Color(0xFF1F2937),
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -664,7 +809,8 @@ fun PieChartWithLabels(
                     Text(
                         text = String.format("%.1f%% • %d repos", percentage, count),
                         fontSize = 13.sp,
-                        color = Color.Gray
+                        color = Color(0xFF6B7280),
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
